@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#121212">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="SOUNDBOX — busque músicas, ouça prévias de 30 segundos, salve favoritas e monte playlists.">
+<meta name="description" content="SOUNDBOX — busque músicas, ouça prévias de 30 segundos, salve favoritas, monte playlists e importe seus arquivos para tocar a música inteira offline.">
 <meta name="format-detection" content="telephone=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -491,11 +491,12 @@ img { display: block; max-width: 100%; }
 .section:first-of-type { margin-top: 18px; }
 .section-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
 }
+.section-head .btn--sm { height: 30px; padding: 0 12px; }
 .section-title { margin: 0; font-size: 15px; font-weight: 600; }
 .section-count { font-size: 12px; color: var(--muted); }
 
@@ -847,6 +848,12 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
   .detail-name { font-size: 26px; }
 }
 
+@media (max-width: 389px) {
+  /* telas estreitas: libera espaço para o placeholder do campo de busca */
+  .searchbar { gap: 6px; padding-left: 14px; }
+  .searchbar__btn { padding: 0 14px; }
+}
+
 @media (max-width: 359px) {
   .brand { font-size: 16px; letter-spacing: 1.5px; }
   .install-btn { padding: 0 11px; font-size: 12px; }
@@ -857,6 +864,13 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
   .icon-btn { width: 30px; }
   .detail-hero { gap: 12px; }
   .detail-hero__art { width: 72px; height: 72px; }
+}
+
+@media (max-width: 339px) {
+  /* celulares bem estreitos: mantém o placeholder inteiro no campo de busca */
+  .searchbar { gap: 4px; padding: 6px 4px 6px 14px; }
+  .searchbar__btn { padding: 0 10px; font-size: 12.5px; }
+  .searchbar__icon { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -871,7 +885,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
 <body>
 
 <noscript>
-  <p style="padding:24px;text-align:center;color:#a0a0a0">O SOUNDBOX precisa de JavaScript ativado para buscar e tocar as prévias.</p>
+  <p style="padding:24px;text-align:center;color:#a0a0a0">O SOUNDBOX precisa de JavaScript ativado para buscar e tocar músicas.</p>
 </noscript>
 
 <div class="app">
@@ -889,9 +903,9 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     <section class="view is-active" id="view-home" data-view="home" aria-label="Início">
       <div class="home">
         <h1 class="home__logo">SOUNDBOX</h1>
-        <p class="home__eyebrow">Prévias de 30 segundos</p>
+        <p class="home__eyebrow">Prévias online e músicas offline</p>
         <p class="home__title">Busque suas músicas</p>
-        <p class="home__sub">Milhões de faixas para descobrir. Streaming direto da API do Deezer, sem baixar nada.</p>
+        <p class="home__sub">Prévias de 30 s da API do Deezer e suas músicas completas guardadas no aparelho — tocam até sem internet.</p>
 
         <form class="searchbar" id="home-form" role="search">
           <span class="ico ico--search searchbar__icon" aria-hidden="true"></span>
@@ -976,6 +990,8 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
   </div>
 </nav>
 
+<input type="file" id="audio-input" accept="audio/*,.mp3,.m4a,.aac,.ogg,.oga,.opus,.wav,.flac,.webm,.aiff,.aif" multiple hidden>
+
 <!-- ============================== POPOVER ============================ -->
 <div class="popover" id="popover" hidden role="menu" aria-label="Adicionar à playlist">
   <p class="popover__label">Adicionar à playlist</p>
@@ -1050,6 +1066,37 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     return n === 1 ? singular : pluralForm;
   }
 
+  /** Faixas do Deezer têm prévia de 30 s; faixas locais têm o arquivo inteiro. */
+  const isPlayable = (track) => Boolean(track && (track.local || track.preview));
+
+  function formatDuration(totalSeconds) {
+    const seconds = Math.max(0, Math.round(Number(totalSeconds) || 0));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const rest = String(seconds % 60).padStart(2, '0');
+    return hours
+      ? hours + ':' + String(minutes).padStart(2, '0') + ':' + rest
+      : minutes + ':' + rest;
+  }
+
+  const AUDIO_EXTENSIONS = /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm|aiff?)$/i;
+  const isAudioFile = (file) => Boolean(file && ((file.type && file.type.startsWith('audio/')) || AUDIO_EXTENSIONS.test(file.name || '')));
+
+  /** "01 - Artista - Música.mp3" -> { artist: 'Artista', title: 'Música' } */
+  function parseAudioFileName(fileName) {
+    const base = String(fileName || '')
+      .replace(/\.[a-z0-9]{2,5}$/i, '')
+      .replace(/[_.]+/g, ' ')
+      .replace(/^\s*\d{1,3}\s*[-.)]\s*/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const parts = base.split(' - ');
+    if (parts.length >= 2 && parts[0].trim()) {
+      return { artist: parts[0].trim(), title: parts.slice(1).join(' - ').trim() || base };
+    }
+    return { artist: 'Arquivo local', title: base || 'Faixa local' };
+  }
+
   const CSS_ESCAPE = (value) => (window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/["\\]/g, '\\$&'));
 
   /** Aceita apenas URLs http(s) para capas e prévias. */
@@ -1068,14 +1115,14 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
      ======================================================================= */
 
   const STORE_KEY = 'soundbox.library.v1';
-  let library = { saved: [], playlists: [] };
+  let library = { saved: [], playlists: [], local: [] };
 
   const isTrack = (t) => Boolean(t && typeof t === 'object' && t.id !== undefined && t.id !== null && t.title);
 
   function readLibrary() {
     try {
       const raw = localStorage.getItem(STORE_KEY);
-      if (!raw) return { saved: [], playlists: [] };
+      if (!raw) return { saved: [], playlists: [], local: [] };
       const data = JSON.parse(raw);
       const saved = Array.isArray(data.saved) ? data.saved.filter(isTrack).map(sanitizeTrack) : [];
       const playlists = Array.isArray(data.playlists)
@@ -1088,10 +1135,13 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
               createdAt: Number(p.createdAt) || Date.now()
             }))
         : [];
-      return { saved, playlists };
+      const local = Array.isArray(data.local)
+        ? data.local.filter(isTrack).map(sanitizeTrack).filter((track) => track.local)
+        : [];
+      return { saved, playlists, local };
     } catch (err) {
       console.warn('[SOUNDBOX] biblioteca ilegível, começando vazia:', err);
-      return { saved: [], playlists: [] };
+      return { saved: [], playlists: [], local: [] };
     }
   }
 
@@ -1101,7 +1151,9 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
       title: String(track.title || 'Sem título'),
       artist: String(track.artist || 'Artista desconhecido'),
       cover: safeMediaUrl(track.cover),
-      preview: safeMediaUrl(track.preview)
+      preview: safeMediaUrl(track.preview),
+      local: track.local === true,
+      duration: Number(track.duration) > 0 ? Number(track.duration) : 0
     };
   }
 
@@ -1114,8 +1166,118 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     }
   }
 
+  /* -----------------------------------------------------------------------
+     1b. Arquivos de áudio importados (IndexedDB) — tocam inteiros e offline
+     ----------------------------------------------------------------------- */
+
+  const AUDIO_DB = 'soundbox-audio';
+  const AUDIO_STORE = 'files';
+  let audioDbPromise = null;
+  const localObjectUrls = new Map();
+
+  function audioDb() {
+    if (!('indexedDB' in window)) return Promise.reject(new Error('IndexedDB indisponível'));
+    if (!audioDbPromise) {
+      audioDbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(AUDIO_DB, 1);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(AUDIO_STORE)) db.createObjectStore(AUDIO_STORE);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+    return audioDbPromise;
+  }
+
+  async function putAudioBlob(id, blob) {
+    const db = await audioDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(AUDIO_STORE, 'readwrite');
+      tx.objectStore(AUDIO_STORE).put(blob, id);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
+  async function getAudioBlob(id) {
+    const db = await audioDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(AUDIO_STORE, 'readonly');
+      const request = tx.objectStore(AUDIO_STORE).get(id);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function deleteAudioBlob(id) {
+    const db = await audioDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(AUDIO_STORE, 'readwrite');
+      tx.objectStore(AUDIO_STORE).delete(id);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function localTrackUrl(track) {
+    if (localObjectUrls.has(track.id)) return localObjectUrls.get(track.id);
+    const blob = await getAudioBlob(track.id);
+    if (!blob) return null;
+    const url = URL.createObjectURL(blob);
+    localObjectUrls.set(track.id, url);
+    return url;
+  }
+
+  function releaseLocalUrl(id) {
+    const url = localObjectUrls.get(id);
+    if (url) {
+      URL.revokeObjectURL(url);
+      localObjectUrls.delete(id);
+    }
+  }
+
+  /** Lê a duração real do arquivo e diz se o navegador consegue decodificá-lo. */
+  function readAudioMetadata(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const probe = new Audio();
+      let done = false;
+      const finish = (value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        probe.removeAttribute('src');
+        URL.revokeObjectURL(url);
+        resolve(value);
+      };
+      // Se a leitura demorar demais, importa mesmo assim (duração 0): o player
+      // ainda tenta tocar quando o usuário pedir.
+      const timer = setTimeout(() => finish({ duration: 0, supported: true }), 10000);
+      probe.preload = 'metadata';
+      probe.addEventListener('loadedmetadata', () => {
+        finish({ duration: Number.isFinite(probe.duration) ? probe.duration : 0, supported: true });
+      }, { once: true });
+      probe.addEventListener('error', () => finish({ duration: 0, supported: false }), { once: true });
+      probe.src = url;
+    });
+  }
+
+  /** Deixa os arquivos locais prontos para tocar sem esperar o IndexedDB. */
+  async function preloadLocalTracks() {
+    for (const track of library.local) {
+      try {
+        await localTrackUrl(track);
+      } catch (err) {
+        console.warn('[SOUNDBOX] não foi possível preparar', track.title, err);
+      }
+    }
+  }
+
   /* =======================================================================
-     2. Reproductor de prévias (um único <audio>, criado via new Audio())
+     2. Reprodutor (prévias remotas e arquivos locais, uma única <audio>)
      ======================================================================= */
 
   const audio = new Audio();
@@ -1130,6 +1292,13 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
   };
 
   let liveFills = [];
+
+  const FALLBACK_ART = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96">'
+    + '<rect width="96" height="96" fill="#242424"/>'
+    + '<text x="48" y="61" font-family="Arial, sans-serif" font-size="38" fill="#a0a0a0" text-anchor="middle">&#9834;</text>'
+    + '</svg>'
+  );
 
   const mini = $('#mini');
   const miniArt = $('#mini-art');
@@ -1189,7 +1358,9 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
       if (playBtn) {
         setIcon(playBtn.querySelector('.ico'), isCurrent && player.playing ? 'pause' : 'play');
         const rowTrack = getTrack(row.dataset.id);
-        playBtn.setAttribute('aria-label', (isCurrent && player.playing ? 'Pausar prévia' : 'Reproduzir prévia')
+        const isLocal = Boolean(rowTrack && rowTrack.local);
+        playBtn.setAttribute('aria-label', (isCurrent && player.playing ? 'Pausar' : 'Reproduzir')
+          + (isLocal ? '' : ' prévia')
           + (rowTrack && rowTrack.title ? ' de ' + rowTrack.title : ''));
       }
 
@@ -1198,7 +1369,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     });
 
     setIcon(miniIcon, player.playing ? 'pause' : 'play');
-    miniToggle.setAttribute('aria-label', player.playing ? 'Pausar prévia' : 'Reproduzir prévia');
+    miniToggle.setAttribute('aria-label', player.playing ? 'Pausar' : 'Reproduzir');
 
     if (player.track) {
       if (mini.hidden) mini.hidden = false;
@@ -1213,13 +1384,8 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     if (!player.track) return;
     miniTitle.textContent = player.track.title;
     miniArtist.textContent = player.track.artist;
-    if (player.track.cover) {
-      miniArt.src = player.track.cover;
-      miniArt.alt = '';
-    } else {
-      miniArt.removeAttribute('src');
-      miniArt.alt = 'Sem capa';
-    }
+    miniArt.src = player.track.cover || FALLBACK_ART;
+    miniArt.alt = player.track.cover ? '' : 'Sem capa';
     mini.hidden = false;
     document.body.classList.add('has-player');
   }
@@ -1240,20 +1406,15 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     }
   }
 
-  function playTrack(track, queue) {
-    if (!track) return;
-    if (!track.preview) {
-      toast('Esta faixa não tem prévia disponível');
-      return;
-    }
-    remember(track);
+  let playRequestId = 0;
 
-    const sourceQueue = (Array.isArray(queue) && queue.length ? queue : [track]).filter((t) => t.preview);
+  function startPlayback(track, source, queue) {
+    const sourceQueue = (Array.isArray(queue) && queue.length ? queue : [track]).filter(isPlayable);
     player.queue = sourceQueue.length ? sourceQueue : [track];
     player.queueIndex = Math.max(0, player.queue.findIndex((t) => t.id === track.id));
     player.track = track;
 
-    audio.src = track.preview;
+    audio.src = source;
     try { audio.currentTime = 0; } catch (err) { /* ignora */ }
 
     const promise = audio.play();
@@ -1261,13 +1422,52 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
       promise.catch(() => {
         player.playing = false;
         applyPlaybackUI();
-        toast('Não foi possível reproduzir esta prévia');
+        toast(track.local ? 'Não foi possível abrir este arquivo' : 'Não foi possível reproduzir esta prévia');
       });
     }
 
     renderMiniPlayer();
     applyPlaybackUI();
     setMediaSession(track);
+  }
+
+  function playTrack(track, queue) {
+    if (!track) return;
+    if (!isPlayable(track)) {
+      toast('Esta faixa não tem prévia disponível');
+      return;
+    }
+    remember(track);
+
+    const requestId = ++playRequestId;
+
+    if (!track.local) {
+      startPlayback(track, track.preview, queue);
+      return;
+    }
+
+    // Arquivo já preparado (caso normal): toca no mesmo gesto do usuário, o que
+    // o Safari do iOS exige. Sem cache, espera o IndexedDB.
+    const cached = localObjectUrls.get(track.id);
+    if (cached) {
+      startPlayback(track, cached, queue);
+      return;
+    }
+
+    (async () => {
+      let source = null;
+      try {
+        source = await localTrackUrl(track);
+      } catch (err) {
+        console.warn('[SOUNDBOX] falha ao abrir arquivo local:', err);
+      }
+      if (requestId !== playRequestId) return;
+      if (!source) {
+        toast('Arquivo não encontrado neste dispositivo');
+        return;
+      }
+      startPlayback(track, source, queue);
+    })();
   }
 
   function togglePlay() {
@@ -1285,7 +1485,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
 
   function playNextFromQueue() {
     const next = player.queue[player.queueIndex + 1];
-    if (next && next.preview) {
+    if (next && isPlayable(next)) {
       playTrack(next, player.queue);
       return true;
     }
@@ -1353,6 +1553,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     if (!id) return null;
     if (tracksById.has(id)) return tracksById.get(id);
     const found = library.saved.find((t) => t.id === id)
+      || library.local.find((t) => t.id === id)
       || library.playlists.reduce((acc, p) => acc || p.songs.find((t) => t.id === id), null);
     return found ? remember(found) : null;
   }
@@ -1434,6 +1635,118 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     renderLibrary();
   }
 
+  /* -----------------------------------------------------------------------
+     Músicas do dispositivo (arquivos completos, guardados no IndexedDB)
+     ----------------------------------------------------------------------- */
+
+  const audioInput = $('#audio-input');
+
+  function openAudioPicker() {
+    if (!audioInput) {
+      toast('Seletor de arquivos indisponível');
+      return;
+    }
+    audioInput.click();
+  }
+
+  async function importAudioFiles(fileList) {
+    const files = Array.from(fileList || []).filter(isAudioFile);
+    if (!files.length) {
+      toast('Selecione arquivos de áudio (MP3, M4A, FLAC…)');
+      return;
+    }
+
+    let imported = 0;
+    let failed = 0;
+    let unsupported = 0;
+    let quotaHit = false;
+
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      toast('Importando ' + (index + 1) + ' de ' + files.length + '…');
+      try {
+        const info = await readAudioMetadata(file);
+        if (!info.supported) {
+          unsupported += 1;
+          continue;
+        }
+
+        const names = parseAudioFileName(file.name);
+        const id = 'local_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        await putAudioBlob(id, file);
+
+        const track = {
+          id,
+          title: names.title,
+          artist: names.artist,
+          cover: '',
+          preview: '',
+          local: true,
+          duration: info.duration
+        };
+        library.local.unshift(track);
+        remember(track);
+        localTrackUrl(track).catch(() => {});
+        imported += 1;
+      } catch (err) {
+        console.warn('[SOUNDBOX] falha ao importar', file.name, err);
+        if (err && (err.name === 'QuotaExceededError' || err.code === 22)) quotaHit = true;
+        failed += 1;
+      }
+    }
+
+    if (imported) persist();
+    if (activeView === 'library') renderLibrary();
+
+    if (!imported) {
+      if (quotaHit) toast('Sem espaço no navegador para salvar o arquivo');
+      else toast(unsupported
+        ? 'Formato não suportado por este navegador'
+        : 'Não foi possível importar os arquivos');
+      return;
+    }
+
+    const notes = [];
+    if (failed) notes.push(quotaHit ? 'sem espaço' : failed + ' com erro');
+    if (unsupported) notes.push(unsupported + ' em formato não suportado');
+    toast(imported + ' ' + plural(imported, 'música importada', 'músicas importadas')
+      + (notes.length ? ' · ' + notes.join(' · ') : ''));
+  }
+
+  function removeLocalTrack(track) {
+    if (!track || !track.local) return;
+
+    library.local = library.local.filter((item) => item.id !== track.id);
+    persist();
+    releaseLocalUrl(track.id);
+    deleteAudioBlob(track.id).catch((err) => console.warn('[SOUNDBOX] falha ao apagar arquivo:', err));
+
+    if (player.track && player.track.id === track.id) {
+      audio.pause();
+      try { audio.removeAttribute('src'); audio.load(); } catch (err) { /* ignora */ }
+      player.track = null;
+      player.playing = false;
+      player.queue = [];
+      player.queueIndex = 0;
+      stopTicker();
+      mini.hidden = true;
+      document.body.classList.remove('has-player');
+    } else if (player.queue.length) {
+      // tira a faixa removida da fila, sem perder a posição da música atual
+      player.queue = player.queue.filter((item) => item.id !== track.id);
+      player.queueIndex = Math.max(0, player.queue.findIndex((item) => item.id === player.track.id));
+    }
+
+    renderLibrary();
+    applyPlaybackUI();
+    toast('Arquivo removido do dispositivo');
+  }
+
+  audioInput.addEventListener('change', () => {
+    importAudioFiles(audioInput.files);
+    audioInput.value = '';
+  });
+
   /* =======================================================================
      5. Componentes de interface
      ======================================================================= */
@@ -1448,16 +1761,23 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
   }
 
   function trackRow(track, mode, options = {}) {
-    const hasPreview = Boolean(track.preview);
+    const playable = isPlayable(track);
+    const isLocal = Boolean(track.local);
     const playlistId = options.playlistId || '';
     remember(track);
+
+    const subtitle = isLocal
+      ? [track.artist, track.duration ? formatDuration(track.duration) : ''].filter(Boolean).join(' · ')
+      : (playable ? track.artist : track.artist + ' · sem prévia');
 
     const art = el('button', {
       class: 'track__art',
       type: 'button',
       'data-action': 'play',
-      'aria-label': 'Reproduzir prévia de ' + track.title,
-      title: hasPreview ? 'Reproduzir prévia' : 'Prévia indisponível'
+      'aria-label': (isLocal ? 'Reproduzir ' : 'Reproduzir prévia de ') + track.title,
+      title: playable
+        ? (isLocal ? 'Reproduzir faixa completa' : 'Reproduzir prévia de 30 s')
+        : 'Prévia indisponível'
     }, [
       imgOrFallback(track.cover),
       el('span', { class: 'track__fab' }, [icon('play')])
@@ -1465,7 +1785,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
 
     const meta = el('div', { class: 'track__meta' }, [
       el('p', { class: 'track__title', text: track.title, title: track.title }),
-      el('p', { class: 'track__artist', text: hasPreview ? track.artist : track.artist + ' · sem prévia', title: track.artist }),
+      el('p', { class: 'track__artist', text: subtitle, title: subtitle }),
       el('div', { class: 'progress' }, [el('span', { class: 'progress__fill' })])
     ]);
 
@@ -1502,6 +1822,16 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
         'data-action': 'remove',
         'aria-label': 'Remover da playlist',
         title: 'Remover da playlist'
+      }, [icon('close')]));
+    }
+
+    if (mode === 'local') {
+      actions.appendChild(el('button', {
+        class: 'icon-btn',
+        type: 'button',
+        'data-action': 'remove-local',
+        'aria-label': 'Remover do dispositivo',
+        title: 'Remover do dispositivo'
       }, [icon('close')]));
     }
 
@@ -1828,6 +2158,29 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
         [icon('plus'), el('span', { text: 'Nova playlist' })])
     ]));
 
+    const localSection = el('section', { class: 'section' }, [
+      el('div', { class: 'section-head' }, [
+        el('h2', { class: 'section-title', text: 'Minhas músicas' }),
+        library.local.length
+          ? el('button', { class: 'btn btn--ghost btn--sm', type: 'button', 'data-action': 'import-audio' },
+              [icon('plus'), el('span', { text: 'Adicionar' })])
+          : null
+      ])
+    ]);
+
+    if (library.local.length) {
+      localSection.appendChild(el('div', { class: 'list' },
+        library.local.map((track) => trackRow(track, 'local'))));
+      localSection.appendChild(el('p', { class: 'legal', text: 'Arquivos guardados neste dispositivo. Reprodução completa, inclusive offline.' }));
+    } else {
+      localSection.appendChild(stateBlock({
+        title: 'Ouça a música inteira, offline',
+        text: 'Importe arquivos de áudio do seu dispositivo (MP3, M4A, FLAC…). Eles ficam salvos no app e tocam por completo, sem internet.',
+        action: { name: 'import-audio', label: 'Importar arquivos' }
+      }));
+    }
+    root.appendChild(localSection);
+
     const savedSection = el('section', { class: 'section' }, [
       el('div', { class: 'section-head' }, [
         el('h2', { class: 'section-title', text: 'Músicas salvas' }),
@@ -1888,7 +2241,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
       type: 'button',
       'data-action': 'play-all'
     }, [icon('play'), el('span', { text: 'Tocar tudo' })]);
-    if (!playlist.songs.some((song) => song.preview)) playButton.disabled = true;
+    if (!playlist.songs.some(isPlayable)) playButton.disabled = true;
 
     root.appendChild(el('div', { class: 'detail-actions' }, [
       playButton,
@@ -2151,6 +2504,8 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
       if (playlist) queue = playlist.songs;
     } else if (row.dataset.mode === 'saved') {
       queue = library.saved.length ? library.saved : [track];
+    } else if (row.dataset.mode === 'local') {
+      queue = library.local.length ? library.local : [track];
     }
 
     playTrack(track, queue);
@@ -2191,6 +2546,16 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
         if (row) removeFromPlaylist(row.dataset.playlist, row.dataset.id);
         break;
 
+      case 'remove-local': {
+        const localTrack = row ? getTrack(row.dataset.id) : null;
+        if (localTrack) removeLocalTrack(localTrack);
+        break;
+      }
+
+      case 'import-audio':
+        openAudioPicker();
+        break;
+
       case 'open-playlist':
         openPlaylistId = actionNode.dataset.playlist;
         renderLibrary();
@@ -2206,7 +2571,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
       case 'play-all': {
         const playlist = library.playlists.find((p) => p.id === openPlaylistId);
         if (!playlist) break;
-        const first = playlist.songs.find((song) => song.preview);
+        const first = playlist.songs.find(isPlayable);
         if (!first) { toast('Esta playlist não tem prévias disponíveis'); break; }
         playTrack(first, playlist.songs);
         break;
@@ -2306,7 +2671,7 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
         id: base,
         name: 'SOUNDBOX',
         short_name: 'SOUNDBOX',
-        description: 'Busque músicas, ouça prévias de 30 segundos e monte playlists.',
+        description: 'Busque músicas, ouça prévias de 30 segundos, monte playlists e toque seus arquivos completos offline.',
         lang: 'pt-BR',
         start_url: base,
         scope,
@@ -2332,51 +2697,17 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
     }
   }
 
-  function setupServiceWorker() {
+  async function setupServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
 
-    // Service worker inline: o código vive nesta página e é servido por blob URL,
-    // com cache-first para o app shell e network-first para as requisições de API.
-    const source = [
-      "'use strict';",
-      "const CACHE = 'soundbox-v1';",
-      "const SHELL = [self.registration.scope];",
-      "self.addEventListener('install', (event) => {",
-      "  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch(() => {}));",
-      "  self.skipWaiting();",
-      "});",
-      "self.addEventListener('activate', (event) => {",
-      "  event.waitUntil(self.clients.claim());",
-      "});",
-      "self.addEventListener('fetch', (event) => {",
-      "  const request = event.request;",
-      "  if (request.method !== 'GET') return;",
-      "  const isApi = /deezer\\.com|corsproxy\\.io|allorigins|codetabs/.test(request.url);",
-      "  if (isApi) {",
-      "    event.respondWith(fetch(request).catch(() => caches.match(request)));",
-      "    return;",
-      "  }",
-      "  event.respondWith((async () => {",
-      "    const cache = await caches.open(CACHE);",
-      "    const cached = await cache.match(request, { ignoreSearch: true });",
-      "    if (cached) return cached;",
-      "    try {",
-      "      const response = await fetch(request);",
-      "      if (response.ok) cache.put(request, response.clone());",
-      "      return response;",
-      "    } catch (err) {",
-      "      return (await cache.match(self.registration.scope)) || Response.error();",
-      "    }",
-      "  })());",
-      "});"
-    ].join('\n');
-
-    const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
-    navigator.serviceWorker.register(url, { scope: './' })
-      .catch((err) => {
-        // Navegadores bloqueiam scripts de service worker servidos por blob:/data:.
-        console.info('[SOUNDBOX] service worker inline não pôde ser registrado neste contexto:', err.message);
-      });
+    // O app shell (HTML + CSS + JS + manifesto) é cacheado por sw.js para
+    // abrir sem internet. As músicas completas ficam no IndexedDB.
+    try {
+      await navigator.serviceWorker.register('./sw.js', { scope: './' });
+      console.info('[SOUNDBOX] app shell em cache — o app abre offline.');
+    } catch (err) {
+      console.info('[SOUNDBOX] sem service worker (sw.js ausente ou bloqueado):', err.message);
+    }
   }
 
   function setInstallState(state) {
@@ -2436,7 +2767,9 @@ body.modal-open .toast.is-visible { transform: translate(-50%, 0); }
   function boot() {
     library = readLibrary();
     rememberAll(library.saved);
+    rememberAll(library.local);
     library.playlists.forEach((playlist) => rememberAll(playlist.songs));
+    preloadLocalTracks();
 
     if (installed) setInstallState('installed');
 
