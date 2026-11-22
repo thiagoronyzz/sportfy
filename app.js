@@ -14,12 +14,13 @@
   const PAY_METHODS = {
     pix: { label: 'Pix / Dinheiro', fee: 0 },
     debito: { label: 'Débito', fee: 1.99 },
-    credito: { label: 'Crédito à vista', fee: 4.99 },
-    parcelado: { label: 'Crédito parcelado', fee: 5.99 }
+    credito: { label: 'Crédito', fee: 4.99 }
   };
 
-  const PARCELADO_BASE_FEE = 5.99;
-  const PARCELADO_STEP_FEE = 1.29;
+  // Estimated market fee for credit, growing with the number of installments.
+  const CREDIT_BASE_FEE = 4.99;
+  const CREDIT_STEP_FEE = 1.09;
+  const MAX_INSTALLMENTS = 12;
   const MAX_FEE_PCT = 35;
   const MAX_FEE_FIXED = 999;
   const MAX_QTY = 9999;
@@ -66,8 +67,9 @@
     methodGrid: $('methodGrid'),
     feePct: $('feePct'),
     feeFixed: $('feeFixed'),
-    installments: $('installments'),
     installmentsField: $('installmentsField'),
+    installmentsChips: $('installmentsChips'),
+    installmentsHint: $('installmentsHint'),
     passFee: $('passFee'),
     passFeeHint: $('passFeeHint'),
     otherCostUnit: $('otherCostUnit'),
@@ -158,7 +160,7 @@
     calculated: null,
     clientMode: 'pct',
     method: 'pix',
-    feeManual: false,
+    installments: 1,
     current: null,
     items: loadItems(),
     toastTimer: null,
@@ -270,8 +272,8 @@
     const feePctRaw = numOr(els.feePct.value, 0);
     const feePct = clamp(feePctRaw, 0, MAX_FEE_PCT);
     const feeFixed = clamp(numOr(els.feeFixed.value, 0), 0, MAX_FEE_FIXED);
-    const installments = state.method === 'parcelado'
-      ? clampInt(els.installments.value, 1, 12)
+    const installments = state.method === 'credito'
+      ? clampInt(state.installments, 1, MAX_INSTALLMENTS)
       : 1;
 
     return {
@@ -283,9 +285,10 @@
     };
   }
 
-  function suggestedParceladoFee(installments) {
-    const n = clampInt(installments, 2, 12);
-    return Math.min(19.99, PARCELADO_BASE_FEE + (n - 1) * PARCELADO_STEP_FEE);
+  function suggestedCreditFee(installments) {
+    const n = clampInt(installments, 1, MAX_INSTALLMENTS);
+    if (n <= 1) return CREDIT_BASE_FEE;
+    return Math.min(24.99, CREDIT_BASE_FEE + (n - 1) * CREDIT_STEP_FEE);
   }
 
   function onBaseFieldEdit(key) {
@@ -427,6 +430,7 @@
       state.current = null;
       renderEmptyState();
       updatePassFeeHint(0, null);
+      updateInstallmentsHint(readActivePayment(), null);
       return;
     }
 
@@ -536,6 +540,7 @@
     state.current = current;
 
     updatePassFeeHint(fee, pay);
+    updateInstallmentsHint(pay, current);
     renderDashboard(current);
     renderScenarios(current);
     updateMobileSummary(current);
@@ -775,33 +780,69 @@
    * Payment UI
    * ------------------------------------------------------------------ */
 
-  function applyMethod(method, opts) {
-    const options = opts || {};
+  function applyMethod(method) {
     if (!PAY_METHODS[method]) method = 'pix';
 
     state.method = method;
-    els.installmentsField.hidden = method !== 'parcelado';
+    if (method !== 'credito') state.installments = 1;
 
-    if (method === 'parcelado' && clampInt(els.installments.value, 1, 12) < 2) {
-      els.installments.value = '3';
-    }
+    const fee = method === 'credito'
+      ? suggestedCreditFee(state.installments)
+      : PAY_METHODS[method].fee;
+    els.feePct.value = fee ? formatNumberInput(fee, 2) : '';
 
-    document.querySelectorAll('[data-method]').forEach((btn) => {
-      const isActive = btn.getAttribute('data-method') === method;
-      btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-pressed', String(isActive));
-    });
-
-    if (!options.keepFee) {
-      const installments = clampInt(els.installments.value, 2, 12);
-      const fee = method === 'parcelado'
-        ? suggestedParceladoFee(installments)
-        : PAY_METHODS[method].fee;
-      els.feePct.value = fee ? formatNumberInput(fee, 2) : '';
-      state.feeManual = false;
-    }
-
+    syncPaymentUI();
     recalculate();
+    scheduleSave();
+  }
+
+  function selectInstallments(count) {
+    state.method = 'credito';
+    state.installments = clampInt(count, 1, MAX_INSTALLMENTS);
+    els.feePct.value = formatNumberInput(suggestedCreditFee(state.installments), 2);
+
+    syncPaymentUI();
+    recalculate();
+    scheduleSave();
+  }
+
+  function buildInstallmentChips() {
+    if (!els.installmentsChips) return;
+    els.installmentsChips.innerHTML = Array.from(
+      { length: MAX_INSTALLMENTS },
+      (_, index) => {
+        const n = index + 1;
+        return `<button type="button" class="chip chip-installment" data-installments="${n}" aria-pressed="false">${n}x</button>`;
+      }
+    ).join('');
+  }
+
+  function updateInstallmentChips() {
+    if (!els.installmentsChips) return;
+    els.installmentsChips.querySelectorAll('[data-installments]').forEach((btn) => {
+      const n = parseInt(btn.getAttribute('data-installments'), 10);
+      const active = state.method === 'credito' && n === state.installments;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+  }
+
+  function updateInstallmentsHint(pay, calc) {
+    if (!els.installmentsHint) return;
+    if (!pay || state.method !== 'credito') {
+      els.installmentsHint.textContent = '';
+      return;
+    }
+
+    const feeText = `taxa da maquininha: ${formatPct(pay.feePct, 2)}`;
+    if (pay.installments <= 1) {
+      els.installmentsHint.textContent = `À vista no crédito · ${feeText}.`;
+    } else if (calc && calc.clientTotal > 0) {
+      els.installmentsHint.textContent =
+        `${pay.installments}x de ${formatBRL(calc.clientTotal / pay.installments)} · ${feeText}.`;
+    } else {
+      els.installmentsHint.textContent = `${pay.installments} parcelas · ${feeText}.`;
+    }
   }
 
   function syncPaymentUI() {
@@ -810,7 +851,8 @@
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-pressed', String(isActive));
     });
-    els.installmentsField.hidden = state.method !== 'parcelado';
+    els.installmentsField.hidden = state.method !== 'credito';
+    updateInstallmentChips();
   }
 
   /* ------------------------------------------------------------------ *
@@ -869,10 +911,8 @@
         const sub = [
           `${item.qty}× ${formatBRL(item.unitPrice)}`,
           item.descPct > 0.01 ? `${formatPct(item.descPct, 1)} off` : null,
-          item.fee > 0.005
-            ? item.passFee
-              ? `+ ${formatBRL(item.fee)} de taxa`
-              : 'taxa absorvida'
+          item.installments > 1
+            ? `${item.installments}x de ${formatBRL(item.clientTotal / item.installments)}`
             : null
         ].filter(Boolean).join(' · ');
 
@@ -921,6 +961,7 @@
       descPct: c.descClientePct,
       fee: c.fee,
       passFee: c.pay.passFee,
+      installments: c.installments,
       clientTotal: c.clientTotal,
       catalogTotal: c.catalogTotal,
       saving: Math.max(0, c.discountTotal),
@@ -1036,6 +1077,14 @@
     }
     lines.push(`TOTAL A PAGAR: ${formatBRL(totalClient)}`);
 
+    const installmentsList = state.items.map((item) => item.installments || 1);
+    const uniformInstallments = installmentsList.every((n) => n === installmentsList[0])
+      ? installmentsList[0]
+      : 0;
+    if (uniformInstallments > 1) {
+      lines.push(`ou ${uniformInstallments}x de ${formatBRL(totalClient / uniformInstallments)} no cartão`);
+    }
+
     return lines.join('\n');
   }
 
@@ -1057,11 +1106,10 @@
     state.history = ['vendaBase', 'descCompra'];
     state.calculated = null;
     state.clientMode = 'pct';
-    state.method = 'pix';
-    state.feeManual = false;
-    els.feePct.value = '';
+    state.method = 'credito';
+    state.installments = 3;
+    els.feePct.value = formatNumberInput(suggestedCreditFee(3), 2);
     els.feeFixed.value = '';
-    els.installments.value = '3';
     els.passFee.checked = true;
 
     syncPaymentUI();
@@ -1088,8 +1136,7 @@
     state.calculated = null;
     state.clientMode = 'pct';
     state.method = 'pix';
-    state.feeManual = false;
-    els.installments.value = '3';
+    state.installments = 1;
 
     try {
       localStorage.removeItem(STORE.form);
@@ -1119,15 +1166,14 @@
           precoFinalCliente: els.precoFinalCliente.value,
           feePct: els.feePct.value,
           feeFixed: els.feeFixed.value,
-          otherCostUnit: els.otherCostUnit.value,
-          installments: els.installments.value
+          otherCostUnit: els.otherCostUnit.value
         },
         history: state.history,
         calculated: state.calculated,
         clientMode: state.clientMode,
         method: state.method,
-        passFee: els.passFee.checked,
-        feeManual: state.feeManual
+        installments: state.installments,
+        passFee: els.passFee.checked
       };
       localStorage.setItem(STORE.form, JSON.stringify(payload));
     } catch (_) {}
@@ -1162,13 +1208,19 @@
     assign(els.feePct, f.feePct);
     assign(els.feeFixed, f.feeFixed);
     assign(els.otherCostUnit, f.otherCostUnit);
-    assign(els.installments, f.installments);
 
     if (['pix', 'debito', 'credito', 'parcelado'].includes(saved.method)) {
-      state.method = saved.method;
+      state.method = saved.method === 'parcelado' ? 'credito' : saved.method;
     }
+
+    const savedInstallments = clampInt(
+      saved.installments !== undefined ? saved.installments : f.installments,
+      1,
+      MAX_INSTALLMENTS
+    );
+    state.installments = state.method === 'credito' ? savedInstallments : 1;
+
     state.clientMode = saved.clientMode === 'finalPrice' ? 'finalPrice' : 'pct';
-    state.feeManual = !!saved.feeManual;
     els.passFee.checked = saved.passFee !== false;
 
     state.history = Array.isArray(saved.history)
@@ -1446,20 +1498,13 @@
       applyMethod(btn.getAttribute('data-method'));
     });
 
-    els.installments.addEventListener('change', () => {
-      if (state.method === 'parcelado' && !state.feeManual) {
-        els.feePct.value = formatNumberInput(
-          suggestedParceladoFee(els.installments.value),
-          2
-        );
-      }
-      recalculate();
+    els.installmentsChips.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-installments]');
+      if (!btn) return;
+      selectInstallments(parseInt(btn.getAttribute('data-installments'), 10));
     });
 
-    els.feePct.addEventListener('input', () => {
-      state.feeManual = true;
-      recalculate();
-    });
+    els.feePct.addEventListener('input', recalculate);
 
     els.feePct.addEventListener('blur', () => {
       const value = parseDecimal(els.feePct.value);
@@ -1561,7 +1606,7 @@
     ['input', 'change'].forEach((evt) => {
       document
         .querySelectorAll(
-          '#productName, #quantity, #vendaBase, #descCompra, #precoCompra, #descCliente, #precoFinalCliente, #feePct, #feeFixed, #otherCostUnit, #installments, #passFee'
+          '#productName, #quantity, #vendaBase, #descCompra, #precoCompra, #descCliente, #precoFinalCliente, #feePct, #feeFixed, #otherCostUnit, #passFee'
         )
         .forEach((el) => el.addEventListener(evt, scheduleSave));
     });
@@ -1585,6 +1630,7 @@
 
   function init() {
     initTheme();
+    buildInstallmentChips();
     bindEvents();
     setupPWA();
 

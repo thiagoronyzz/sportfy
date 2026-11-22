@@ -19,8 +19,10 @@ Funciona como **PWA**: pode ser instalada no celular, abre em tela cheia e funci
 - Alerta imediato quando a negociação gera prejuízo.
 
 ### Taxa da maquininha (novo)
-- Formas de pagamento: **Pix/Dinheiro, Débito, Crédito e Crédito parcelado** (2x a 12x),
-  com taxas médias de mercado já sugeridas — todas editáveis.
+- Formas de pagamento: **Pix/Dinheiro, Débito e Crédito**, com taxas médias de mercado já
+  sugeridas — todas editáveis.
+- **Parcelamento para o cliente**: escolha de 1x a 12x; a taxa estimada da maquininha cresce
+  com o número de parcelas e o valor de cada parcela aparece na hora.
 - Taxa percentual + taxa fixa da maquininha.
 - Chave **“Repassar a taxa para o cliente”**: quando ligada, o valor é embutido no total pago
   pelo cliente (cálculo por dentro), de modo que você recebe exatamente o valor combinado.

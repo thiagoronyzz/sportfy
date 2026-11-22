@@ -204,12 +204,14 @@
           </button>
           <button type="button" class="method" data-method="credito" aria-pressed="false">
             <span class="method-name">Crédito</span>
-            <small class="method-fee">≈ 4,99%</small>
+            <small class="method-fee">≈ 4,99% a 17%</small>
           </button>
-          <button type="button" class="method" data-method="parcelado" aria-pressed="false">
-            <span class="method-name">Parcelado</span>
-            <small class="method-fee">≈ 5,99%+</small>
-          </button>
+        </div>
+
+        <div class="field installments-field" id="installmentsField" hidden>
+          <span class="label" id="installmentsLabel">Cliente quer parcelar?</span>
+          <div class="installments-chips" id="installmentsChips" role="group" aria-labelledby="installmentsLabel"></div>
+          <p class="hint" id="installmentsHint"></p>
         </div>
 
         <div class="fee-grid">
@@ -227,24 +229,6 @@
               <input type="text" inputmode="decimal" id="feeFixed" class="input input-money" placeholder="0,00" autocomplete="off" />
             </div>
           </div>
-        </div>
-
-        <div class="field" id="installmentsField" hidden>
-          <label class="label" for="installments">Parcelas no cartão</label>
-          <select id="installments" class="input select">
-            <option value="2">2x</option>
-            <option value="3" selected>3x</option>
-            <option value="4">4x</option>
-            <option value="5">5x</option>
-            <option value="6">6x</option>
-            <option value="7">7x</option>
-            <option value="8">8x</option>
-            <option value="9">9x</option>
-            <option value="10">10x</option>
-            <option value="11">11x</option>
-            <option value="12">12x</option>
-          </select>
-          <p class="hint">A taxa é preenchida com uma média de mercado. Ajuste para a sua maquininha.</p>
         </div>
 
         <label class="switch-card" for="passFee">

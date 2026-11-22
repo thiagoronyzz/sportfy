@@ -1,6 +1,6 @@
 /* Margix — service worker (app shell + offline) */
 
-const CACHE_NAME = 'margix-v4';
+const CACHE_NAME = 'margix-v5';
 const APP_SHELL = [
   './',
   './index.html',
