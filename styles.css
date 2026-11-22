@@ -1228,15 +1228,6 @@ input[type="range"] {
 }
 
 @media (max-width: 640px) {
-  .btn-install {
-    width: 38px;
-    padding: 0;
-  }
-
-  .btn-install span {
-    display: none;
-  }
-
   .sheet {
     position: fixed;
     inset: auto 0 0 0;
@@ -1261,5 +1252,305 @@ input[type="range"] {
 
   .topbar-actions .btn-install {
     padding: 0;
+  }
+}
+
+
+/* ==========================================================================
+   VERSÃO DE CELULAR — app shell
+   Tudo aqui vive dentro da media query (ou é componente novo, oculto no
+   desktop). Nenhuma regra de computador foi alterada.
+   ========================================================================== */
+
+.btn-icon-only,
+.mobile-summary,
+.tabbar,
+.mobile-order-empty {
+  display: none;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: calc(140px + env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .main-grid {
+    gap: 16px;
+    padding-top: 14px;
+    padding-bottom: 8px;
+  }
+
+  /* ---- topo compacto: Instalar + ações em ícone ---- */
+  .topbar-inner {
+    row-gap: 8px;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .topbar-actions .btn-compact {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+  }
+
+  .topbar-actions .btn-compact .btn-text {
+    display: none;
+  }
+
+  .btn-icon-only {
+    display: block;
+  }
+
+  .btn-install {
+    height: 40px;
+    padding: 0 13px;
+  }
+
+  .btn-install span {
+    display: inline;
+  }
+
+  /* ---- alvos de toque ---- */
+  .btn {
+    height: 44px;
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .input-number {
+    height: 46px;
+    font-size: 15px;
+  }
+
+  .chip {
+    padding: 7px 11px;
+    font-size: 12px;
+  }
+
+  .qty-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* ---- tabelas compactas ---- */
+  .scenarios-table {
+    font-size: 12px;
+  }
+
+  .scenarios-table th {
+    padding: 8px 7px;
+    font-size: 10px;
+  }
+
+  .scenarios-table td {
+    padding: 9px 7px;
+  }
+
+  /* ---- telas do app (uma por aba) ---- */
+  body[data-view="calc"] .results-column,
+  body[data-view="calc"] #orderSection,
+  body[data-view="calc"] #mobileOrderEmpty,
+  body[data-view="result"] .inputs-panel,
+  body[data-view="result"] #orderSection,
+  body[data-view="result"] #mobileOrderEmpty,
+  body[data-view="order"] .inputs-panel,
+  body[data-view="order"] .results-column {
+    display: none !important;
+  }
+
+  body[data-view="order"] .main-grid {
+    display: none;
+  }
+
+  body[data-view="order"] #mobileOrderEmpty:not([hidden]) {
+    display: block !important;
+    padding-top: 14px;
+    padding-bottom: 8px;
+  }
+
+  .mobile-empty-text {
+    margin: 0 0 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  /* ---- resumo fixo acima das abas ---- */
+  .mobile-summary {
+    display: flex;
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    z-index: 79;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px -16px rgba(15, 23, 42, 0.45);
+  }
+
+  body[data-view="order"] .mobile-summary {
+    display: none;
+  }
+
+  .mobile-summary-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ms-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .ms-value {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ms-sub {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 10.5px;
+    color: var(--text-muted);
+  }
+
+  .ms-profit {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+  }
+
+  .ms-profit .ms-value {
+    color: var(--profit-strong);
+  }
+
+  .ms-profit.is-loss .ms-value {
+    color: var(--danger);
+  }
+
+  /* ---- barra de abas ---- */
+  .tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 80;
+    padding: 5px 6px calc(5px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+  }
+
+  [data-theme="dark"] .tabbar {
+    background: rgba(17, 24, 39, 0.97);
+  }
+
+  .tab {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 7px 4px 6px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .tab .icon {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tab.active {
+    color: var(--primary);
+    background: var(--primary-soft);
+  }
+
+  .tab-badge {
+    position: absolute;
+    top: 3px;
+    right: calc(50% - 24px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--profit);
+    color: #FFFFFF;
+    font-size: 9.5px;
+    font-weight: 700;
+  }
+
+  /* ---- rodapé e avisos acima das barras ---- */
+  .footer-inner {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .toast {
+    left: 14px;
+    right: 14px;
+    bottom: calc(136px + env(safe-area-inset-bottom));
+    text-align: center;
   }
 }
