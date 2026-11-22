@@ -1,21 +1,72 @@
-# MARGIX — Calculadora Comercial para Revendedores
+# Margix — Calculadora de margem para revendedores
 
-Ferramenta web de precificação, cálculo de descontos e análise de margem líquida desenvolvida para revendedores.
+Ferramenta de precificação para quem revende: calcula custo, desconto para o cliente,
+**taxa da maquininha** (repassada ou não) e o lucro líquido real da venda.
+
+Funciona como **PWA**: pode ser instalada no celular, abre em tela cheia e funciona offline.
 
 ## Funcionalidades
 
-- **Cálculo Bidirecional Inteligente**: preencha quaisquer dois valores entre **Preço de Venda / Tabela**, **% de Desconto na Compra** e **Preço de Compra (Custo)** para calcular automaticamente o terceiro em tempo real.
-- **Desconto para o Cliente**: informe a porcentagem de desconto concedida ao cliente (ou digite diretamente o preço final negociado em R$) e acompanhe instantaneamente o impacto no lucro líquido.
-- **Visualização Financeira Clara**:
-  - Cards executivos com **Valor a Cobrar do Cliente**, **Lucro Líquido Real**, **Custo Total** e **Economia do Cliente**.
-  - **Barra de Composição do Preço** proporcional (Custo, Taxas, Lucro e Desconto).
-  - Indicador automático do **Desconto Máximo sem Prejuízo (Ponto de Equilíbrio)** e alerta imediato caso o desconto gere prejuízo.
-- **Simulador Rápido de Negociação**: tabela comparativa de cenários de desconto (0% a 30%) clicável.
-- **Simulação de Pedido / Kit**: adicione múltiplos itens e copie o orçamento limpo para enviar ao cliente (sem exibir seus custos ou margem).
+### Precificação em tempo real
+- **Cálculo bidirecional**: preencha dois entre **Preço de tabela**, **% de desconto na compra**
+  e **Preço de compra (custo)** e o terceiro é calculado automaticamente.
+- Produto (opcional) e quantidade com seletor rápido.
+- Atalhos de desconto de compra (15% a 40%).
+
+### Desconto para o cliente
+- Ajuste por **porcentagem** ou pelo **preço final por unidade**, com controle deslizante e atalhos.
+- Indicador do **desconto máximo sem prejuízo** (ponto de equilíbrio).
+- Alerta imediato quando a negociação gera prejuízo.
+
+### Taxa da maquininha (novo)
+- Formas de pagamento: **Pix/Dinheiro, Débito e Crédito**, com taxas médias de mercado já
+  sugeridas — todas editáveis.
+- **Parcelamento para o cliente**: escolha de 1x a 12x; a taxa estimada da maquininha cresce
+  com o número de parcelas e o valor de cada parcela aparece na hora.
+- Taxa percentual + taxa fixa da maquininha.
+- Chave **“Repassar a taxa para o cliente”**: quando ligada, o valor é embutido no total pago
+  pelo cliente (cálculo por dentro), de modo que você recebe exatamente o valor combinado.
+  Quando desligada, a taxa sai do seu lucro.
+- O acréscimo entra no **valor geral da compra** do cliente, no resumo do pedido e no
+  orçamento copiado, incluindo o valor de cada parcela.
+
+### Resultado da venda
+- **Total para o cliente** em destaque, com subtotal, acréscimo da maquininha, valor líquido
+  recebido e parcelamento.
+- Lucro líquido, margem real, markup, custo total e economia do cliente.
+- **Composição visual** do valor pago (custo, taxa e lucro).
+- **Simulador de negociação** com cenários de desconto (0% a 30%) aplicáveis com um toque.
+- Cópia do resumo para o cliente (sem exibir custo ou lucro).
+
+### Pedido / orçamento
+- Adicione vários produtos e veja o total do pedido, o lucro acumulado e a taxa incluída.
+- Copie um orçamento limpo para enviar ao cliente.
+
+## App no celular (PWA)
+- `manifest.webmanifest` com ícones 192/512 + maskable e abertura em tela cheia.
+- **Service worker** (`sw.js`) com cache do app shell: depois da primeira visita, abre offline.
+- Botão **Instalar** no topo quando o navegador permitir; no iPhone, um guia explica
+  “Adicionar à Tela de Início”.
+- Interface mobile-first: abas fixas (Calcular / Resultado / Pedido), barra de resumo,
+  áreas de toque grandes, `safe-area` do iPhone e tabelas compactas.
+- Tema claro/escuro, com preferência do sistema e persistência local.
 
 ## Como executar localmente
 
 ```bash
 python3 -m http.server 8000 --bind 0.0.0.0
 ```
-Acesse `http://localhost:8000` no navegador.
+
+Acesse `http://localhost:8000`. O service worker e a instalação exigem `https://`
+ou `localhost`.
+
+## Estrutura
+
+```
+index.html            interface
+styles.css            design system e responsividade
+app.js                cálculos, interações, abas, instalação
+manifest.webmanifest  configuração do PWA
+sw.js                 service worker (offline)
+icons/                ícones do app (SVG + PNGs)
+```
