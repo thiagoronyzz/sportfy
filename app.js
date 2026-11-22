@@ -1,151 +1,216 @@
 (function () {
   'use strict';
 
-  const STORAGE_ORDER_KEY = 'margix_order_items_v1';
-  const STORAGE_THEME_KEY = 'margix_theme_v1';
+  /* ------------------------------------------------------------------ *
+   * Constants
+   * ------------------------------------------------------------------ */
 
-  // DOM Elements
-  const els = {
-    productName: document.getElementById('productName'),
-    quantity: document.getElementById('quantity'),
-    qtyMinus: document.getElementById('qtyMinus'),
-    qtyPlus: document.getElementById('qtyPlus'),
-
-    vendaBase: document.getElementById('vendaBase'),
-    descCompra: document.getElementById('descCompra'),
-    precoCompra: document.getElementById('precoCompra'),
-
-    cardVendaBase: document.getElementById('cardVendaBase'),
-    cardDescCompra: document.getElementById('cardDescCompra'),
-    cardPrecoCompra: document.getElementById('cardPrecoCompra'),
-
-    badgeVendaBase: document.getElementById('badgeVendaBase'),
-    badgeDescCompra: document.getElementById('badgeDescCompra'),
-    badgePrecoCompra: document.getElementById('badgePrecoCompra'),
-
-    calcModeHint: document.getElementById('calcModeHint'),
-    markupInfo: document.getElementById('markupInfo'),
-
-    descCliente: document.getElementById('descCliente'),
-    precoFinalCliente: document.getElementById('precoFinalCliente'),
-    sliderDescCliente: document.getElementById('sliderDescCliente'),
-    sliderBreakEvenMark: document.getElementById('sliderBreakEvenMark'),
-    sliderMaxLabel: document.getElementById('sliderMaxLabel'),
-    maxDiscountPill: document.getElementById('maxDiscountPill'),
-
-    taxaExtraPct: document.getElementById('taxaExtraPct'),
-    custoExtraFixo: document.getElementById('custoExtraFixo'),
-
-    healthBadge: document.getElementById('healthBadge'),
-    resultTitle: document.getElementById('resultTitle'),
-    lossAlert: document.getElementById('lossAlert'),
-    lossAlertText: document.getElementById('lossAlertText'),
-
-    kpiClientPrice: document.getElementById('kpiClientPrice'),
-    kpiClientSub: document.getElementById('kpiClientSub'),
-    kpiProfitCard: document.getElementById('kpiProfitCard'),
-    kpiNetProfit: document.getElementById('kpiNetProfit'),
-    kpiProfitSub: document.getElementById('kpiProfitSub'),
-    kpiTotalCost: document.getElementById('kpiTotalCost'),
-    kpiCostSub: document.getElementById('kpiCostSub'),
-    kpiClientSaving: document.getElementById('kpiClientSaving'),
-    kpiSavingSub: document.getElementById('kpiSavingSub'),
-
-    breakdownRefTotal: document.getElementById('breakdownRefTotal'),
-    barCost: document.getElementById('barCost'),
-    barFees: document.getElementById('barFees'),
-    barProfit: document.getElementById('barProfit'),
-    barDiscount: document.getElementById('barDiscount'),
-
-    legCost: document.getElementById('legCost'),
-    legFeesWrap: document.getElementById('legFeesWrap'),
-    legFees: document.getElementById('legFees'),
-    dotProfit: document.getElementById('dotProfit'),
-    legProfitLabel: document.getElementById('legProfitLabel'),
-    legProfit: document.getElementById('legProfit'),
-    legDiscount: document.getElementById('legDiscount'),
-
-    metricRoi: document.getElementById('metricRoi'),
-    metricMargin: document.getElementById('metricMargin'),
-    metricBreakEven: document.getElementById('metricBreakEven'),
-
-    btnAddItem: document.getElementById('btnAddItem'),
-    btnCopyClient: document.getElementById('btnCopyClient'),
-    copyBtnText: document.getElementById('copyBtnText'),
-
-    scenariosBody: document.getElementById('scenariosBody'),
-
-    orderSection: document.getElementById('orderSection'),
-    orderCount: document.getElementById('orderCount'),
-    orderBody: document.getElementById('orderBody'),
-    orderTotalQty: document.getElementById('orderTotalQty'),
-    orderTotalCost: document.getElementById('orderTotalCost'),
-    orderTotalSaved: document.getElementById('orderTotalSaved'),
-    orderTotalRevenue: document.getElementById('orderTotalRevenue'),
-    orderTotalProfit: document.getElementById('orderTotalProfit'),
-    btnCopyOrderQuote: document.getElementById('btnCopyOrderQuote'),
-    btnClearOrder: document.getElementById('btnClearOrder'),
-
-    btnExample: document.getElementById('btnExample'),
-    btnClear: document.getElementById('btnClear'),
-    btnTheme: document.getElementById('btnTheme'),
-    iconMoon: document.getElementById('iconMoon'),
-    iconSun: document.getElementById('iconSun'),
-    toast: document.getElementById('toast')
+  const STORE = {
+    order: 'margix:orders:v2',
+    theme: 'margix:theme:v1',
+    form: 'margix:form:v2'
   };
 
+  const PAY_METHODS = {
+    pix: { label: 'Pix / Dinheiro', fee: 0 },
+    debito: { label: 'Débito', fee: 1.99 },
+    credito: { label: 'Crédito à vista', fee: 4.99 },
+    parcelado: { label: 'Crédito parcelado', fee: 5.99 }
+  };
+
+  const PARCELADO_BASE_FEE = 5.99;
+  const PARCELADO_STEP_FEE = 1.29;
+  const MAX_FEE_PCT = 35;
+  const MAX_FEE_FIXED = 999;
+  const MAX_QTY = 9999;
+
   const BASE_FIELDS = ['vendaBase', 'descCompra', 'precoCompra'];
+  const CARD_ID = {
+    vendaBase: 'cardVendaBase',
+    descCompra: 'cardDescCompra',
+    precoCompra: 'cardPrecoCompra'
+  };
+  const BADGE_ID = {
+    vendaBase: 'badgeVendaBase',
+    descCompra: 'badgeDescCompra',
+    precoCompra: 'badgePrecoCompra'
+  };
 
-  // Tracks the last 2 user-edited fields among BASE_FIELDS
-  let editHistory = [];
-  let calculatedField = null;
-  // Tracks whether client price was set via '%' or 'finalPrice'
-  let clientEditMode = 'pct';
-  let currentCalc = null;
-  let orderItems = loadOrderItems();
-  let toastTimer = null;
+  /* ------------------------------------------------------------------ *
+   * DOM
+   * ------------------------------------------------------------------ */
 
-  // Formatters
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    // operation
+    productName: $('productName'),
+    quantity: $('quantity'),
+    qtyMinus: $('qtyMinus'),
+    qtyPlus: $('qtyPlus'),
+    vendaBase: $('vendaBase'),
+    descCompra: $('descCompra'),
+    precoCompra: $('precoCompra'),
+    calcModeHint: $('calcModeHint'),
+    markupInfo: $('markupInfo'),
+
+    // client discount
+    descCliente: $('descCliente'),
+    precoFinalCliente: $('precoFinalCliente'),
+    sliderDescCliente: $('sliderDescCliente'),
+    sliderBreakEvenMark: $('sliderBreakEvenMark'),
+    sliderMaxLabel: $('sliderMaxLabel'),
+    maxDiscountPill: $('maxDiscountPill'),
+
+    // payment
+    methodGrid: $('methodGrid'),
+    feePct: $('feePct'),
+    feeFixed: $('feeFixed'),
+    installments: $('installments'),
+    installmentsField: $('installmentsField'),
+    passFee: $('passFee'),
+    passFeeHint: $('passFeeHint'),
+    otherCostUnit: $('otherCostUnit'),
+
+    // hero
+    resultTitle: $('resultTitle'),
+    healthBadge: $('healthBadge'),
+    kpiClientPrice: $('kpiClientPrice'),
+    heroLines: $('heroLines'),
+    heroSubtotal: $('heroSubtotal'),
+    heroSubtotalRow: $('heroSubtotalRow'),
+    heroFeeRow: $('heroFeeRow'),
+    heroFeeLabel: $('heroFeeLabel'),
+    heroFee: $('heroFee'),
+    heroReceivesRow: $('heroReceivesRow'),
+    heroReceives: $('heroReceives'),
+    heroInstallmentsRow: $('heroInstallmentsRow'),
+    heroInstallments: $('heroInstallments'),
+    lossAlert: $('lossAlert'),
+    lossAlertText: $('lossAlertText'),
+    legProfitLabel: $('legProfitLabel'),
+    kpiNetProfit: $('kpiNetProfit'),
+    kpiProfitSub: $('kpiProfitSub'),
+    kpiReceiveSub: $('kpiReceiveSub'),
+    btnAddItem: $('btnAddItem'),
+    btnCopyClient: $('btnCopyClient'),
+
+    // details
+    barCost: $('barCost'),
+    barFees: $('barFees'),
+    barProfit: $('barProfit'),
+    barLoss: $('barLoss'),
+    legCost: $('legCost'),
+    legFeesWrap: $('legFeesWrap'),
+    legFees: $('legFees'),
+    legProfitName: $('legProfitName'),
+    legProfit: $('legProfit'),
+    dotProfit: $('dotProfit'),
+    savingNote: $('savingNote'),
+    metricCost: $('metricCost'),
+    metricReceive: $('metricReceive'),
+    metricSaving: $('metricSaving'),
+    metricMarkup: $('metricMarkup'),
+    metricMargin: $('metricMargin'),
+    metricBreakEven: $('metricBreakEven'),
+
+    scenariosBody: $('scenariosBody'),
+
+    // order
+    orderSection: $('orderSection'),
+    orderCount: $('orderCount'),
+    orderEmpty: $('orderEmpty'),
+    orderTableWrap: $('orderTableWrap'),
+    orderBody: $('orderBody'),
+    orderTotalQty: $('orderTotalQty'),
+    orderTotalClient: $('orderTotalClient'),
+    orderTotalProfit: $('orderTotalProfit'),
+    orderFeeNote: $('orderFeeNote'),
+    btnCopyOrderQuote: $('btnCopyOrderQuote'),
+    btnClearOrder: $('btnClearOrder'),
+    tabOrderBadge: $('tabOrderBadge'),
+
+    // chrome
+    btnExample: $('btnExample'),
+    btnClear: $('btnClear'),
+    btnTheme: $('btnTheme'),
+    iconMoon: $('iconMoon'),
+    iconSun: $('iconSun'),
+    toast: $('toast'),
+    mobileSummary: $('mobileSummary'),
+    mobileSummaryValue: $('mobileSummaryValue'),
+    metaThemeColor: $('metaThemeColor'),
+
+    // install
+    btnInstall: $('btnInstall'),
+    btnInstallFooter: $('btnInstallFooter'),
+    installSheet: $('installSheet'),
+    installSheetClose: $('installSheetClose'),
+    installSheetBody: $('installSheetBody')
+  };
+
+  /* ------------------------------------------------------------------ *
+   * State
+   * ------------------------------------------------------------------ */
+
+  const state = {
+    history: [],
+    calculated: null,
+    clientMode: 'pct',
+    method: 'pix',
+    feeManual: false,
+    current: null,
+    items: loadItems(),
+    toastTimer: null,
+    saveTimer: null,
+    deferredPrompt: null
+  };
+
+  /* ------------------------------------------------------------------ *
+   * Formatting helpers
+   * ------------------------------------------------------------------ */
+
   const brlFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   });
 
-  function formatBRL(val) {
-    if (!Number.isFinite(val)) return 'R$ 0,00';
-    return brlFormatter.format(val);
+  function formatBRL(value) {
+    const v = Number.isFinite(value) ? value : 0;
+    return brlFormatter.format(v);
   }
 
-  function formatNumberInput(val, decimals = 2) {
-    if (!Number.isFinite(val)) return '';
-    return val.toLocaleString('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    });
-  }
-
-  function formatPct(val, decimals = 1) {
-    if (!Number.isFinite(val)) return '0,0%';
+  function formatPct(value, decimals = 1) {
+    const v = Number.isFinite(value) ? value : 0;
     return (
-      val.toLocaleString('pt-BR', {
+      v.toLocaleString('pt-BR', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
       }) + '%'
     );
   }
 
+  function formatNumberInput(value, decimals = 2) {
+    if (!Number.isFinite(value)) return '';
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  }
+
   function parseDecimal(raw) {
     if (raw === null || raw === undefined) return NaN;
     const str = String(raw).trim();
     if (!str) return NaN;
-    // Support both "1.250,50" and "1250.50" or "89,90"
+
     let normalized = str.replace(/[^\d.,-]/g, '');
     if (!normalized || normalized === '-' || normalized === '.' || normalized === ',') return NaN;
 
     const hasComma = normalized.includes(',');
     const hasDot = normalized.includes('.');
     if (hasComma && hasDot) {
-      // Assume last separator is the decimal separator
       if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
         normalized = normalized.replace(/\./g, '').replace(',', '.');
       } else {
@@ -154,84 +219,128 @@
     } else if (hasComma) {
       normalized = normalized.replace(',', '.');
     }
+
     const num = parseFloat(normalized);
     return Number.isFinite(num) ? num : NaN;
   }
 
-  function showToast(msg) {
-    els.toast.textContent = msg;
-    els.toast.hidden = false;
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      els.toast.hidden = true;
-    }, 2600);
+  function numOr(value, fallback) {
+    const n = parseDecimal(value);
+    return Number.isFinite(n) ? n : fallback;
   }
 
-  // Record user edit on one of the 3 base fields
-  function onBaseFieldEdit(fieldKey) {
-    const val = parseDecimal(els[fieldKey].value);
-    const isValid =
-      fieldKey === 'descCompra'
-        ? Number.isFinite(val) && val < 100
-        : Number.isFinite(val) && val > 0;
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
 
-    // If user starts typing in the field that was previously auto-calculated, it becomes manual
-    if (calculatedField && calculatedField !== fieldKey && !isValid) {
-      // Clear previously calculated value if fewer than 2 valid inputs remain
-      els[calculatedField].value = '';
-      calculatedField = null;
+  function clampInt(value, min, max) {
+    const n = parseInt(value, 10);
+    if (!Number.isFinite(n)) return min;
+    return clamp(n, min, max);
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function showToast(message) {
+    els.toast.textContent = message;
+    els.toast.hidden = false;
+    if (state.toastTimer) clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(() => {
+      els.toast.hidden = true;
+    }, 2800);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Base values (two of three: sale price, purchase discount, cost)
+   * ------------------------------------------------------------------ */
+
+  function isValidBaseValue(key, value) {
+    if (!Number.isFinite(value)) return false;
+    if (key === 'descCompra') return value >= 0 && value < 100;
+    return value > 0;
+  }
+
+  function readActivePayment() {
+    const feePctRaw = numOr(els.feePct.value, 0);
+    const feePct = clamp(feePctRaw, 0, MAX_FEE_PCT);
+    const feeFixed = clamp(numOr(els.feeFixed.value, 0), 0, MAX_FEE_FIXED);
+    const installments = state.method === 'parcelado'
+      ? clampInt(els.installments.value, 1, 12)
+      : 1;
+
+    return {
+      method: state.method,
+      feePct,
+      feeFixed,
+      installments,
+      passFee: els.passFee.checked
+    };
+  }
+
+  function suggestedParceladoFee(installments) {
+    const n = clampInt(installments, 2, 12);
+    return Math.min(19.99, PARCELADO_BASE_FEE + (n - 1) * PARCELADO_STEP_FEE);
+  }
+
+  function onBaseFieldEdit(key) {
+    const value = parseDecimal(els[key].value);
+    const valid = isValidBaseValue(key, value);
+
+    if (state.calculated && state.calculated !== key && !valid) {
+      els[state.calculated].value = '';
+      state.calculated = null;
     }
 
-    editHistory = editHistory.filter((k) => k !== fieldKey);
-    if (isValid) {
-      editHistory.push(fieldKey);
-      if (editHistory.length > 2) {
-        editHistory = editHistory.slice(-2);
-      }
-    } else if (calculatedField && calculatedField !== fieldKey) {
-      els[calculatedField].value = '';
-      calculatedField = null;
+    state.history = state.history.filter((k) => k !== key);
+    if (valid) {
+      state.history.push(key);
+      if (state.history.length > 2) state.history = state.history.slice(-2);
+    } else if (state.calculated && state.calculated !== key) {
+      els[state.calculated].value = '';
+      state.calculated = null;
     }
 
-    updateBuyDiscountChips();
+    updateBuyChips();
     recalculate();
   }
 
   function resolveBaseValues() {
-    // Prune any invalid fields from editHistory
-    editHistory = editHistory.filter((k) => {
-      const v = parseDecimal(els[k].value);
-      return k === 'descCompra' ? Number.isFinite(v) && v < 100 : Number.isFinite(v) && v > 0;
+    state.history = state.history.filter((key) =>
+      isValidBaseValue(key, parseDecimal(els[key].value))
+    );
+
+    BASE_FIELDS.forEach((key) => {
+      $(CARD_ID[key]).classList.remove('is-calculated');
+      $(BADGE_ID[key]).hidden = true;
     });
 
-    // Reset badges
-    BASE_FIELDS.forEach((k) => {
-      const cap = k.charAt(0).toUpperCase() + k.slice(1);
-      els['card' + cap].classList.remove('is-calculated');
-      els['badge' + cap].hidden = true;
-    });
-
-    if (editHistory.length < 2) {
-      if (calculatedField && !editHistory.includes(calculatedField)) {
-        els[calculatedField].value = '';
+    if (state.history.length < 2) {
+      if (state.calculated && !state.history.includes(state.calculated)) {
+        els[state.calculated].value = '';
       }
-      calculatedField = null;
+      state.calculated = null;
       els.calcModeHint.textContent =
-        editHistory.length === 0 ? 'Preencha 2 campos base' : 'Falta 1 campo base';
+        state.history.length === 0 ? 'Preencha 2 campos' : 'Falta 1 campo';
       return null;
     }
 
-    // Determine target field to compute
-    const target = BASE_FIELDS.find((k) => !editHistory.includes(k));
-    calculatedField = target;
+    const target = BASE_FIELDS.find((key) => !state.history.includes(key));
+    if (!target) return null;
+    state.calculated = target;
 
     let vendaBase = parseDecimal(els.vendaBase.value);
     let descCompra = parseDecimal(els.descCompra.value);
     let precoCompra = parseDecimal(els.precoCompra.value);
 
     if (target === 'precoCompra') {
-      precoCompra = vendaBase * (1 - descCompra / 100);
-      if (precoCompra < 0) precoCompra = 0;
+      const factor = 1 - descCompra / 100;
+      precoCompra = Math.max(0, vendaBase * factor);
       els.precoCompra.value = formatNumberInput(precoCompra, 2);
       els.calcModeHint.textContent = 'Custo calculado';
     } else if (target === 'vendaBase') {
@@ -239,438 +348,724 @@
       if (factor <= 0) return null;
       vendaBase = precoCompra / factor;
       els.vendaBase.value = formatNumberInput(vendaBase, 2);
-      els.calcModeHint.textContent = 'Preço de venda calculado';
-    } else if (target === 'descCompra') {
+      els.calcModeHint.textContent = 'Tabela calculada';
+    } else {
+      if (vendaBase <= 0) return null;
       descCompra = ((vendaBase - precoCompra) / vendaBase) * 100;
       els.descCompra.value = formatNumberInput(descCompra, 1);
-      els.calcModeHint.textContent = '% de compra calculado';
+      els.calcModeHint.textContent = 'Desconto calculado';
     }
 
-    const capTarget = target.charAt(0).toUpperCase() + target.slice(1);
-    els['card' + capTarget].classList.add('is-calculated');
-    els['badge' + capTarget].hidden = false;
-
-    updateBuyDiscountChips();
+    $(CARD_ID[target]).classList.add('is-calculated');
+    $(BADGE_ID[target]).hidden = false;
 
     return { vendaBase, descCompra, precoCompra };
   }
 
-  function updateBuyDiscountChips() {
-    const val = parseDecimal(els.descCompra.value);
+  function updateBuyChips() {
+    const current = parseDecimal(els.descCompra.value);
     document.querySelectorAll('[data-buy-disc]').forEach((btn) => {
-      const chipVal = parseFloat(btn.getAttribute('data-buy-disc'));
-      btn.classList.toggle('active', Number.isFinite(val) && Math.abs(val - chipVal) < 0.05);
+      const chipValue = parseFloat(btn.getAttribute('data-buy-disc'));
+      const active = Number.isFinite(current) && Math.abs(current - chipValue) < 0.05;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
     });
   }
 
-  function updateClientDiscountChips(descPct) {
+  function updateClientChips(descPct) {
     document.querySelectorAll('[data-client-disc]').forEach((btn) => {
-      const chipVal = parseFloat(btn.getAttribute('data-client-disc'));
-      btn.classList.toggle('active', Number.isFinite(descPct) && Math.abs(descPct - chipVal) < 0.05);
+      const chipValue = parseFloat(btn.getAttribute('data-client-disc'));
+      const active = Number.isFinite(descPct) && Math.abs(descPct - chipValue) < 0.05;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
     });
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Financial model
+   * ------------------------------------------------------------------ */
+
+  /**
+   * Fee charged by the card machine for a given negotiated amount.
+   * - passFee = true: gross-up, so the seller still receives `baseTotal`.
+   * - passFee = false: the fee is simply discounted from the seller.
+   */
+  function cardFeeFor(baseTotal, pay) {
+    if (baseTotal <= 0) return 0;
+
+    if (!pay.passFee) {
+      return baseTotal * (pay.feePct / 100) + pay.feeFixed;
+    }
+
+    const netFactor = 1 - pay.feePct / 100;
+    if (netFactor <= 0.01) return 0;
+    return (baseTotal + pay.feeFixed) / netFactor - baseTotal;
+  }
+
+  function breakEvenUnit(costUnit, otherUnit, qty, pay, vendaBase) {
+    if (pay.passFee) {
+      // The fee is neutralised, so break-even is simply cost + extras.
+      return costUnit + otherUnit;
+    }
+    const netFactor = 1 - pay.feePct / 100;
+    if (netFactor <= 0.01) return vendaBase;
+    return (costUnit + otherUnit + pay.feeFixed / qty) / netFactor;
   }
 
   function recalculate() {
     const base = resolveBaseValues();
-    const qty = Math.max(1, parseInt(els.quantity.value, 10) || 1);
-    const prodName = els.productName.value.trim();
+    const qty = clampInt(els.quantity.value, 1, MAX_QTY);
+    const productName = els.productName.value.trim();
 
-    els.resultTitle.textContent = prodName
-      ? `${prodName}${qty > 1 ? ` (${qty} un.)` : ''}`
+    els.resultTitle.textContent = productName
+      ? productName + (qty > 1 ? ` · ${qty} un.` : '')
       : qty > 1
-        ? `Análise Financeira (${qty} unidades)`
-        : 'Análise Financeira';
+        ? `Análise da venda · ${qty} un.`
+        : 'Análise da venda';
 
-    if (!base || base.vendaBase <= 0) {
-      currentCalc = null;
+    if (!base || !(base.vendaBase > 0) || !Number.isFinite(base.precoCompra)) {
+      state.current = null;
       renderEmptyState();
+      updatePassFeeHint(0, null);
       return;
     }
 
     const { vendaBase, descCompra, precoCompra } = base;
+    const pay = readActivePayment();
+    const otherUnit = Math.max(0, numOr(els.otherCostUnit.value, 0));
 
-    // Markup on base selling price
     if (precoCompra > 0) {
       const baseMarkup = ((vendaBase - precoCompra) / precoCompra) * 100;
-      els.markupInfo.textContent = `Custo unitário • Markup de tabela: ${baseMarkup >= 0 ? '+' : ''}${formatPct(baseMarkup, 1)}`;
+      els.markupInfo.textContent =
+        `Custo unitário · markup de tabela: ${baseMarkup >= 0 ? '+' : ''}${formatPct(baseMarkup, 1)}`;
     } else {
-      els.markupInfo.textContent = 'Valor unitário pago ao fornecedor / marca';
+      els.markupInfo.textContent = 'Valor unitário pago ao fornecedor.';
     }
 
-    // Extra fees
-    const taxaPctRaw = parseDecimal(els.taxaExtraPct.value);
-    const taxaPct = Number.isFinite(taxaPctRaw) && taxaPctRaw > 0 ? Math.min(taxaPctRaw, 99) : 0;
-    const fixoRaw = parseDecimal(els.custoExtraFixo.value);
-    const custoFixoUnit = Number.isFinite(fixoRaw) && fixoRaw > 0 ? fixoRaw : 0;
+    const catalogTotal = vendaBase * qty;
+    const costTotal = precoCompra * qty;
+    const otherTotal = otherUnit * qty;
 
-    // Break-even unit selling price:
-    // precoMin * (1 - taxaPct/100) = precoCompra + custoFixoUnit
-    const netFactor = 1 - taxaPct / 100;
-    const breakEvenUnit = netFactor > 0 ? (precoCompra + custoFixoUnit) / netFactor : vendaBase;
-    const maxDiscountPct = Math.max(0, ((vendaBase - breakEvenUnit) / vendaBase) * 100);
+    // --- client discount (percentage <-> final unit price) ---
+    let descClientePct;
+    let negotiatedUnit;
 
-    // Update slider dynamic max so user can test around break-even comfortably
-    const sliderMax = Math.max(50, Math.ceil((maxDiscountPct + 10) / 5) * 5);
-    els.sliderDescCliente.max = String(Math.min(95, sliderMax));
-    els.sliderMaxLabel.textContent = `${els.sliderDescCliente.max}%`;
-    els.sliderBreakEvenMark.textContent = `Máx. s/ prejuízo: ${formatPct(maxDiscountPct, 1)}`;
-    els.maxDiscountPill.textContent = `Limite s/ prejuízo: ${formatPct(maxDiscountPct, 1)}`;
-
-    // Sync client discount % <-> final unit price
-    let descClientePct = 0;
-    let precoFinalUnit = vendaBase;
-
-    if (clientEditMode === 'finalPrice') {
+    if (state.clientMode === 'finalPrice') {
       const typedFinal = parseDecimal(els.precoFinalCliente.value);
       if (Number.isFinite(typedFinal) && typedFinal >= 0) {
-        precoFinalUnit = typedFinal;
-        descClientePct = ((vendaBase - precoFinalUnit) / vendaBase) * 100;
+        negotiatedUnit = typedFinal;
+        descClientePct = ((vendaBase - negotiatedUnit) / vendaBase) * 100;
       } else {
-        precoFinalUnit = vendaBase;
+        negotiatedUnit = vendaBase;
         descClientePct = 0;
       }
       els.descCliente.value = formatNumberInput(descClientePct, 1);
     } else {
       const typedPct = parseDecimal(els.descCliente.value);
-      descClientePct = Number.isFinite(typedPct) ? Math.min(100, typedPct) : 0;
-      precoFinalUnit = vendaBase * (1 - descClientePct / 100);
-      if (precoFinalUnit < 0) precoFinalUnit = 0;
-      els.precoFinalCliente.value = formatNumberInput(precoFinalUnit, 2);
+      descClientePct = Number.isFinite(typedPct) ? clamp(typedPct, -999, 99) : 0;
+      negotiatedUnit = Math.max(0, vendaBase * (1 - descClientePct / 100));
+      els.precoFinalCliente.value = formatNumberInput(negotiatedUnit, 2);
     }
 
-    els.sliderDescCliente.value = String(Math.max(0, Math.min(parseFloat(els.sliderDescCliente.max), descClientePct)));
-    updateClientDiscountChips(descClientePct);
+    const negotiatedTotal = negotiatedUnit * qty;
+    const fee = cardFeeFor(negotiatedTotal, pay);
+    const clientTotal = pay.passFee ? negotiatedTotal + fee : negotiatedTotal;
+    const profit = negotiatedTotal - costTotal - otherTotal - (pay.passFee ? 0 : fee);
+    const received = negotiatedTotal - (pay.passFee ? 0 : fee);
+    const invested = costTotal + otherTotal;
+    const marginPct = negotiatedTotal > 0 ? (profit / negotiatedTotal) * 100 : 0;
+    const roiPct = invested > 0 ? (profit / invested) * 100 : 0;
+    const discountTotal = catalogTotal - negotiatedTotal;
+    const discountPct = catalogTotal > 0 ? (discountTotal / catalogTotal) * 100 : 0;
+    const clientSaving = catalogTotal - clientTotal;
+    const clientSavingPct = catalogTotal > 0 ? (clientSaving / catalogTotal) * 100 : 0;
 
-    // Per-unit & total financial breakdown
-    const feeVarUnit = precoFinalUnit * (taxaPct / 100);
-    const totalFeesUnit = feeVarUnit + custoFixoUnit;
-    const netProfitUnit = precoFinalUnit - precoCompra - totalFeesUnit;
-    const clientSavingUnit = Math.max(0, vendaBase - precoFinalUnit);
+    const minUnit = breakEvenUnit(precoCompra, otherUnit, qty, pay, vendaBase);
+    const maxDiscountPct = Math.max(0, ((vendaBase - minUnit) / vendaBase) * 100);
+    const installmentValue = pay.installments > 1 ? clientTotal / pay.installments : 0;
 
-    const totalCatalog = vendaBase * qty;
-    const totalClientPrice = precoFinalUnit * qty;
-    const totalPurchaseCost = precoCompra * qty;
-    const totalFees = totalFeesUnit * qty;
-    const totalNetProfit = netProfitUnit * qty;
-    const totalClientSaving = clientSavingUnit * qty;
+    // --- slider & limit pill ---
+    const sliderMax = clamp(
+      Math.max(50, Math.ceil((Math.max(maxDiscountPct, descClientePct) + 10) / 5) * 5),
+      0,
+      99
+    );
+    els.sliderDescCliente.max = String(sliderMax);
+    els.sliderDescCliente.value = String(clamp(Number(els.sliderDescCliente.value) || 0, 0, sliderMax));
+    els.sliderMaxLabel.textContent = sliderMax + '%';
+    els.sliderBreakEvenMark.textContent = `Sem prejuízo: ${formatPct(maxDiscountPct, 1)}`;
 
-    const realMarginPct = precoFinalUnit > 0 ? (netProfitUnit / precoFinalUnit) * 100 : 0;
-    const totalOutlayUnit = precoCompra + totalFeesUnit;
-    const roiPct = totalOutlayUnit > 0 ? (netProfitUnit / totalOutlayUnit) * 100 : 0;
+    const overLimit = descClientePct > maxDiscountPct + 0.1;
+    els.maxDiscountPill.textContent = `Limite: ${formatPct(maxDiscountPct, 1)}`;
+    els.maxDiscountPill.className = 'pill ' + (overLimit ? 'is-danger' : 'pill-accent');
 
-    currentCalc = {
-      productName: prodName || 'Produto sem nome',
+    els.sliderDescCliente.value = String(clamp(descClientePct, 0, sliderMax));
+    updateClientChips(descClientePct);
+
+    const current = {
+      productName: productName || 'Produto',
+      productNameRaw: productName,
       qty,
       vendaBase,
       descCompra,
       precoCompra,
       descClientePct,
-      precoFinalUnit,
-      totalCatalog,
-      totalClientPrice,
-      totalPurchaseCost,
-      totalFees,
-      totalNetProfit,
-      totalClientSaving,
-      realMarginPct,
+      negotiatedUnit,
+      catalogTotal,
+      negotiatedTotal,
+      costTotal,
+      otherTotal,
+      fee,
+      clientTotal,
+      received,
+      profit,
+      invested,
+      marginPct,
       roiPct,
+      discountTotal,
+      discountPct,
+      clientSaving,
+      clientSavingPct,
+      minUnit,
       maxDiscountPct,
-      breakEvenUnit,
-      taxaPct,
-      custoFixoUnit
+      installmentValue,
+      installments: pay.installments,
+      pay
     };
 
-    renderDashboard(currentCalc);
-    renderScenariosTable(currentCalc);
+    state.current = current;
+
+    updatePassFeeHint(fee, pay);
+    renderDashboard(current);
+    renderScenarios(current);
+    updateMobileSummary(current);
   }
+
+  /* ------------------------------------------------------------------ *
+   * Rendering
+   * ------------------------------------------------------------------ */
 
   function renderEmptyState() {
     els.healthBadge.className = 'health-badge health-neutral';
-    els.healthBadge.textContent = 'Aguardando valores';
-    els.lossAlert.hidden = true;
-    els.kpiProfitCard.classList.remove('is-loss');
+    els.healthBadge.textContent = 'Aguardando';
 
     els.kpiClientPrice.textContent = 'R$ 0,00';
-    els.kpiClientSub.textContent = 'Tabela: R$ 0,00';
+    els.heroSubtotal.textContent = 'R$ 0,00';
+    els.heroLines.hidden = true;
+    els.heroFeeRow.hidden = true;
+    els.heroReceivesRow.hidden = true;
+    els.heroInstallmentsRow.hidden = true;
+    els.lossAlert.hidden = true;
+
     els.kpiNetProfit.textContent = 'R$ 0,00';
-    els.kpiProfitSub.textContent = 'Margem real: 0,0%';
-    els.kpiTotalCost.textContent = 'R$ 0,00';
-    els.kpiCostSub.textContent = 'Desconto compra: 0,0%';
-    els.kpiClientSaving.textContent = 'R$ 0,00';
-    els.kpiSavingSub.textContent = '0,0% de desconto';
+    els.kpiProfitSub.textContent = 'Margem líquida: 0,0%';
+    els.kpiReceiveSub.textContent = 'Sobre o custo: 0,0%';
+    els.legProfitLabel.textContent = 'Seu lucro líquido';
+    setHeroLoss(false);
 
-    els.breakdownRefTotal.textContent = 'Referência: R$ 0,00';
-    els.barCost.style.width = '50%';
+    els.barCost.style.width = '60%';
     els.barFees.style.width = '0%';
-    els.barProfit.style.width = '50%';
+    els.barProfit.style.width = '40%';
+    els.barLoss.style.width = '0%';
     els.barProfit.classList.remove('is-loss');
-    els.barDiscount.style.width = '0%';
-
-    els.legCost.textContent = 'R$ 0,00 (0%)';
-    els.legFeesWrap.hidden = true;
-    els.legProfitLabel.textContent = 'Seu Lucro Líquido';
     els.dotProfit.classList.remove('is-loss');
-    els.legProfit.textContent = 'R$ 0,00 (0%)';
-    els.legDiscount.textContent = 'R$ 0,00 (0%)';
 
-    els.metricRoi.textContent = '0,0%';
+    els.legCost.textContent = 'R$ 0,00';
+    els.legFeesWrap.hidden = true;
+    els.legProfitName.textContent = 'Lucro';
+    els.legProfit.textContent = 'R$ 0,00';
+
+    els.savingNote.textContent = 'Preencha custo e preço de venda para ver o resultado.';
+
+    els.metricCost.textContent = 'R$ 0,00';
+    els.metricReceive.textContent = 'R$ 0,00';
+    els.metricSaving.textContent = 'R$ 0,00';
+    els.metricMarkup.textContent = '0,0%';
     els.metricMargin.textContent = '0,0%';
-    els.metricBreakEven.textContent = '0,0% (R$ 0,00)';
-    els.maxDiscountPill.textContent = 'Limite s/ prejuízo: —';
+    els.metricBreakEven.textContent = '—';
+    els.metricCost.classList.remove('is-loss');
+
+    els.maxDiscountPill.textContent = 'Limite: —';
+    els.maxDiscountPill.className = 'pill pill-accent';
+    els.sliderBreakEvenMark.textContent = 'Sem prejuízo: —';
 
     els.btnAddItem.disabled = true;
     els.btnCopyClient.disabled = true;
 
     els.scenariosBody.innerHTML =
-      '<tr><td colspan="5" class="empty-table-cell">Preencha os valores base para visualizar os cenários de desconto.</td></tr>';
+      '<tr><td colspan="5" class="empty-cell">Preencha os valores base para ver os cenários.</td></tr>';
+
+    updateMobileSummary(null);
+  }
+
+  function setHeroLoss(isLoss) {
+    const block = els.kpiNetProfit.closest('.hero-profit');
+    if (block) block.classList.toggle('is-loss', !!isLoss);
   }
 
   function renderDashboard(c) {
-    const isLoss = c.totalNetProfit < -0.005;
-    const isLowMargin = !isLoss && c.realMarginPct < 10;
+    const isLoss = c.profit < -0.005;
+    const lowMargin = !isLoss && c.marginPct < 10;
 
-    // Health badge & alert
     if (isLoss) {
       els.healthBadge.className = 'health-badge health-loss';
-      els.healthBadge.textContent = 'Prejuízo na Operação';
+      els.healthBadge.textContent = 'Prejuízo';
       els.lossAlert.hidden = false;
-      els.lossAlertText.textContent = `Atenção: com ${formatPct(c.descClientePct, 1)} de desconto, você perde ${formatBRL(Math.abs(c.totalNetProfit))}. O preço mínimo sem prejuízo é ${formatBRL(c.breakEvenUnit)}/un (${formatPct(c.maxDiscountPct, 1)} máx.).`;
-      els.kpiProfitCard.classList.add('is-loss');
-    } else if (isLowMargin) {
+      els.lossAlertText.textContent =
+        `Com ${formatPct(c.descClientePct, 1)} de desconto você perde ${formatBRL(Math.abs(c.profit))}. ` +
+        `Preço mínimo sem prejuízo: ${formatBRL(c.minUnit)}/un.`;
+    } else if (lowMargin) {
       els.healthBadge.className = 'health-badge health-warn';
-      els.healthBadge.textContent = 'Margem Apertada';
+      els.healthBadge.textContent = 'Margem baixa';
       els.lossAlert.hidden = true;
-      els.kpiProfitCard.classList.remove('is-loss');
     } else {
       els.healthBadge.className = 'health-badge health-good';
-      els.healthBadge.textContent = 'Lucro Saudável';
+      els.healthBadge.textContent = 'Lucro saudável';
       els.lossAlert.hidden = true;
-      els.kpiProfitCard.classList.remove('is-loss');
     }
 
-    // KPI Cards
-    els.kpiClientPrice.textContent = formatBRL(c.totalClientPrice);
-    els.kpiClientSub.textContent =
-      c.qty > 1
-        ? `${formatBRL(c.precoFinalUnit)}/un • Tabela: ${formatBRL(c.totalCatalog)}`
-        : `Preço de tabela: ${formatBRL(c.vendaBase)}`;
+    // client total
+    els.kpiClientPrice.textContent = formatBRL(c.clientTotal);
+    els.heroSubtotal.textContent = formatBRL(c.negotiatedTotal);
+    els.heroSubtotalRow.hidden = c.fee <= 0.005;
+    els.heroLines.hidden = c.fee <= 0.005 && c.installments <= 1;
 
-    els.kpiNetProfit.textContent =
-      (isLoss ? '− ' : '') + formatBRL(Math.abs(c.totalNetProfit));
-    els.kpiProfitSub.textContent =
-      c.qty > 1
-        ? `${formatBRL(c.totalNetProfit / c.qty)}/un • Margem: ${formatPct(c.realMarginPct, 1)}`
-        : `Margem líquida real: ${formatPct(c.realMarginPct, 1)}`;
+    if (c.fee > 0.005) {
+      els.heroFeeRow.hidden = false;
+      els.heroFeeRow.classList.toggle('is-absorbed', !c.pay.passFee);
+      const feeLabel = c.pay.feePct > 0.0001
+        ? `(${formatPct(c.pay.feePct, 2)})`
+        : '(taxa fixa)';
+      els.heroFeeLabel.textContent = c.pay.passFee
+        ? `Acréscimo da maquininha ${feeLabel}`
+        : `Maquininha por sua conta ${feeLabel}`;
+      els.heroFee.textContent = (c.pay.passFee ? '+ ' : '− ') + formatBRL(c.fee);
 
-    els.kpiTotalCost.textContent = formatBRL(c.totalPurchaseCost + c.totalFees);
-    els.kpiCostSub.textContent =
-      c.totalFees > 0
-        ? `Compra ${formatBRL(c.totalPurchaseCost)} + Taxas ${formatBRL(c.totalFees)}`
-        : `Desc. na compra: ${formatPct(c.descCompra, 1)}`;
-
-    els.kpiClientSaving.textContent = formatBRL(c.totalClientSaving);
-    els.kpiSavingSub.textContent =
-      c.descClientePct >= 0
-        ? `${formatPct(c.descClientePct, 1)} de desconto aplicado`
-        : `Acima da tabela (+${formatPct(Math.abs(c.descClientePct), 1)})`;
-
-    // Visual Stacked Composition Bar
-    const refBase = Math.max(c.totalCatalog, c.totalClientPrice, c.totalPurchaseCost + c.totalFees);
-    els.breakdownRefTotal.textContent = `Referência: ${formatBRL(refBase)}`;
-
-    let costPct = 0;
-    let feesPct = 0;
-    let profitPct = 0;
-    let discPct = 0;
-
-    if (refBase > 0) {
-      if (!isLoss) {
-        costPct = (c.totalPurchaseCost / refBase) * 100;
-        feesPct = (c.totalFees / refBase) * 100;
-        profitPct = Math.max(0, (c.totalNetProfit / refBase) * 100);
-        discPct = Math.max(0, (c.totalClientSaving / refBase) * 100);
-      } else {
-        // In loss scenario, show revenue vs deficit vs discount clearly
-        const totalOut = c.totalPurchaseCost + c.totalFees + c.totalClientSaving;
-        costPct = (c.totalPurchaseCost / totalOut) * 100;
-        feesPct = (c.totalFees / totalOut) * 100;
-        profitPct = (Math.abs(c.totalNetProfit) / totalOut) * 100;
-        discPct = Math.max(0, (c.totalClientSaving / totalOut) * 100);
-      }
+      els.heroReceivesRow.hidden = false;
+      els.heroReceives.textContent = formatBRL(c.received);
+    } else {
+      els.heroFeeRow.hidden = true;
+      els.heroReceivesRow.hidden = true;
     }
 
-    els.barCost.style.width = `${costPct.toFixed(2)}%`;
-    els.barFees.style.width = `${feesPct.toFixed(2)}%`;
-    els.barProfit.style.width = `${profitPct.toFixed(2)}%`;
-    els.barDiscount.style.width = `${discPct.toFixed(2)}%`;
+    if (c.installments > 1) {
+      els.heroInstallmentsRow.hidden = false;
+      els.heroInstallments.textContent = `${c.installments}x de ${formatBRL(c.installmentValue)}`;
+    } else {
+      els.heroInstallmentsRow.hidden = true;
+    }
 
+    // profit block
+    els.kpiNetProfit.textContent = (isLoss ? '− ' : '') + formatBRL(Math.abs(c.profit));
+    els.kpiProfitSub.textContent = `Margem líquida: ${formatPct(c.marginPct, 1)}`;
+    els.kpiReceiveSub.textContent = `Sobre o custo: ${c.roiPct >= 0 ? '+' : ''}${formatPct(c.roiPct, 1)}`;
+    els.legProfitLabel.textContent = isLoss ? 'Prejuízo nesta venda' : 'Seu lucro líquido';
+    if (!isLoss && c.profit < 0.005) els.legProfitLabel.textContent = 'Empatado';
+    setHeroLoss(isLoss);
+
+    // composition bar
+    let denominator = c.clientTotal;
+    const costPart = c.costTotal + c.otherTotal;
+    const feePart = c.fee > 0.005 ? c.fee : 0;
+    let profitPart = Math.max(0, c.profit);
+    let lossPart = c.profit < -0.005 ? Math.abs(c.profit) : 0;
+
+    if (lossPart > 0) {
+      denominator = costPart + feePart + lossPart;
+    }
+    if (denominator <= 0) denominator = 1;
+
+    els.barCost.style.width = `${((costPart / denominator) * 100).toFixed(2)}%`;
+    els.barFees.style.width = `${((feePart / denominator) * 100).toFixed(2)}%`;
+    els.barProfit.style.width = `${((profitPart / denominator) * 100).toFixed(2)}%`;
+    els.barLoss.style.width = `${((lossPart / denominator) * 100).toFixed(2)}%`;
     els.barProfit.classList.toggle('is-loss', isLoss);
     els.dotProfit.classList.toggle('is-loss', isLoss);
 
-    els.legCost.textContent = `${formatBRL(c.totalPurchaseCost)} (${formatPct((c.totalPurchaseCost / refBase) * 100, 0)})`;
+    els.legCost.textContent = formatBRL(costPart);
+    els.legFeesWrap.hidden = feePart <= 0.005;
+    els.legFees.textContent = formatBRL(feePart);
+    els.legProfitName.textContent = isLoss ? 'Prejuízo' : 'Lucro';
+    els.legProfit.textContent = formatBRL(Math.abs(c.profit));
 
-    if (c.totalFees > 0) {
-      els.legFeesWrap.hidden = false;
-      els.legFees.textContent = `${formatBRL(c.totalFees)} (${formatPct((c.totalFees / refBase) * 100, 0)})`;
+    if (c.clientSaving > 0.005) {
+      els.savingNote.textContent =
+        `Economia do cliente: ${formatBRL(c.clientSaving)} (${formatPct(c.clientSavingPct, 1)} abaixo da tabela)`;
+    } else if (c.clientSaving < -0.005) {
+      els.savingNote.textContent =
+        `Cliente paga ${formatBRL(Math.abs(c.clientSaving))} acima do preço de tabela — taxa incluída.`;
     } else {
-      els.legFeesWrap.hidden = true;
+      els.savingNote.textContent = 'Cliente paga exatamente o preço de tabela.';
     }
 
-    els.legProfitLabel.textContent = isLoss ? 'Prejuízo na Venda' : 'Seu Lucro Líquido';
-    els.legProfit.textContent = `${isLoss ? '−' : ''}${formatBRL(Math.abs(c.totalNetProfit))} (${formatPct((Math.abs(c.totalNetProfit) / refBase) * 100, 0)})`;
-    els.legDiscount.textContent = `${formatBRL(c.totalClientSaving)} (${formatPct(Math.max(0, c.descClientePct), 1)})`;
-
-    // Detailed metrics
-    els.metricRoi.textContent = `${c.roiPct >= 0 ? '+' : ''}${formatPct(c.roiPct, 1)}`;
-    els.metricMargin.textContent = formatPct(c.realMarginPct, 1);
-    els.metricBreakEven.textContent = `${formatPct(c.maxDiscountPct, 1)} (${formatBRL(c.breakEvenUnit)})`;
+    // metrics
+    const absorbedFee = c.pay.passFee ? 0 : c.fee;
+    els.metricCost.textContent = formatBRL(c.invested + absorbedFee);
+    els.metricCost.classList.toggle('is-loss', isLoss);
+    els.metricReceive.textContent = formatBRL(c.received);
+    els.metricSaving.textContent = c.clientSaving > 0.005 ? formatBRL(c.clientSaving) : '—';
+    els.metricMarkup.textContent = c.invested > 0 ? formatPct(c.roiPct, 1) : '—';
+    els.metricMargin.textContent = formatPct(c.marginPct, 1);
+    els.metricMargin.classList.toggle('is-loss', isLoss);
+    els.metricBreakEven.textContent = formatBRL(c.minUnit);
+    els.metricBreakEven.title =
+      `Desconto máximo sem prejuízo: ${formatPct(c.maxDiscountPct, 1)}`;
 
     els.btnAddItem.disabled = false;
     els.btnCopyClient.disabled = false;
   }
 
-  function renderScenariosTable(c) {
-    // Generate intelligent discount steps: 0%, 5%, 10%, 15%, 20%, 25%, plus exact break-even if distinct
+  function renderScenarios(c) {
     const steps = [0, 5, 10, 15, 20, 25, 30];
-    const rowsHtml = steps
+
+    els.scenariosBody.innerHTML = steps
       .map((pct) => {
-        const unitPrice = c.vendaBase * (1 - pct / 100);
-        const totalPrice = unitPrice * c.qty;
-        const totalSaved = Math.max(0, c.vendaBase - unitPrice) * c.qty;
-        const fees = (unitPrice * (c.taxaPct / 100) + c.custoFixoUnit) * c.qty;
-        const profit = totalPrice - c.totalPurchaseCost - fees;
-        const margin = totalPrice > 0 ? (profit / totalPrice) * 100 : 0;
+        const negotiated = c.catalogTotal * (1 - pct / 100);
+        const fee = cardFeeFor(negotiated, c.pay);
+        const clientPays = c.pay.passFee ? negotiated + fee : negotiated;
+        const profit =
+          negotiated - c.costTotal - c.otherTotal - (c.pay.passFee ? 0 : fee);
+        const margin = negotiated > 0 ? (profit / negotiated) * 100 : 0;
         const isActive = Math.abs(c.descClientePct - pct) < 0.25;
-        const isLossRow = profit < -0.005;
+        const isLoss = profit < -0.005;
 
         return `
-          <tr data-scenario-pct="${pct}" class="${isActive ? 'active-row' : ''} ${isLossRow ? 'loss-row' : ''}">
+          <tr data-scenario-pct="${pct}" class="${isActive ? 'active-row' : ''} ${isLoss ? 'loss-row' : ''}">
             <td><strong>${pct}%</strong></td>
-            <td>${formatBRL(totalPrice)}</td>
-            <td>${pct === 0 ? '—' : formatBRL(totalSaved)}</td>
-            <td class="col-profit">${isLossRow ? '− ' : ''}${formatBRL(Math.abs(profit))}</td>
+            <td><strong>${formatBRL(clientPays)}</strong></td>
+            <td class="col-fee">${fee > 0.005 ? (c.pay.passFee ? '+' : '−') + formatBRL(fee) : '—'}</td>
+            <td class="col-profit">${isLoss ? '− ' : ''}${formatBRL(Math.abs(profit))}</td>
             <td>${formatPct(margin, 1)}</td>
           </tr>
         `;
       })
       .join('');
-
-    els.scenariosBody.innerHTML = rowsHtml;
   }
 
-  // ORDER LIST MANAGEMENT
-  function loadOrderItems() {
+  function updatePassFeeHint(fee, pay) {
+    const card = els.passFee.closest('.switch-card');
+    if (card) card.classList.toggle('is-off', !els.passFee.checked);
+
+    if (!pay || fee <= 0.005) {
+      els.passFeeHint.textContent = els.passFee.checked
+        ? 'Sem taxa nesta forma de pagamento.'
+        : 'Você recebe o valor combinado, sem desconto de taxa.';
+      return;
+    }
+
+    if (pay.passFee) {
+      els.passFeeHint.textContent =
+        `O cliente paga ${formatBRL(fee)} a mais e você recebe o valor combinado.`;
+    } else {
+      els.passFeeHint.textContent =
+        `Você absorve ${formatBRL(fee)} de taxa — sai do seu lucro.`;
+    }
+  }
+
+  function updateMobileSummary(c) {
+    if (!c) {
+      els.mobileSummary.hidden = true;
+      return;
+    }
+    els.mobileSummary.hidden = false;
+    els.mobileSummaryValue.textContent = formatBRL(c.clientTotal);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Payment UI
+   * ------------------------------------------------------------------ */
+
+  function applyMethod(method, opts) {
+    const options = opts || {};
+    if (!PAY_METHODS[method]) method = 'pix';
+
+    state.method = method;
+    els.installmentsField.hidden = method !== 'parcelado';
+
+    if (method === 'parcelado' && clampInt(els.installments.value, 1, 12) < 2) {
+      els.installments.value = '3';
+    }
+
+    document.querySelectorAll('[data-method]').forEach((btn) => {
+      const isActive = btn.getAttribute('data-method') === method;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+
+    if (!options.keepFee) {
+      const installments = clampInt(els.installments.value, 2, 12);
+      const fee = method === 'parcelado'
+        ? suggestedParceladoFee(installments)
+        : PAY_METHODS[method].fee;
+      els.feePct.value = fee ? formatNumberInput(fee, 2) : '';
+      state.feeManual = false;
+    }
+
+    recalculate();
+  }
+
+  function syncPaymentUI() {
+    document.querySelectorAll('[data-method]').forEach((btn) => {
+      const isActive = btn.getAttribute('data-method') === state.method;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+    els.installmentsField.hidden = state.method !== 'parcelado';
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Order simulator
+   * ------------------------------------------------------------------ */
+
+  function loadItems() {
     try {
-      const raw = localStorage.getItem(STORAGE_ORDER_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
+      const parsed = JSON.parse(localStorage.getItem(STORE.order) || '[]');
       return Array.isArray(parsed) ? parsed : [];
     } catch (_) {
       return [];
     }
   }
 
-  function saveOrderItems() {
+  function saveItems() {
     try {
-      localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(orderItems));
-    } catch (_) {}
+      localStorage.setItem(STORE.order, JSON.stringify(state.items));
+    } catch (_) {
+      /* storage unavailable */
+    }
   }
 
-  function renderOrderSection() {
-    if (orderItems.length === 0) {
-      els.orderSection.hidden = true;
+  function renderOrder() {
+    const count = state.items.length;
+    const hasItems = count > 0;
+    const totalQty = state.items.reduce((sum, item) => sum + item.qty, 0);
+
+    els.orderSection.classList.toggle('has-items', hasItems);
+    els.orderEmpty.hidden = hasItems;
+    els.orderTableWrap.hidden = !hasItems;
+    els.orderCount.textContent = String(count);
+    els.tabOrderBadge.hidden = !hasItems;
+    els.tabOrderBadge.textContent = String(count);
+
+    if (!hasItems) {
+      els.orderBody.innerHTML = '';
+      els.orderTotalQty.textContent = '0';
+      els.orderTotalClient.textContent = formatBRL(0);
+      els.orderTotalProfit.textContent = formatBRL(0);
+      els.orderFeeNote.hidden = true;
       return;
     }
 
-    els.orderSection.hidden = false;
-    els.orderCount.textContent = String(orderItems.length);
+    let totalClient = 0;
+    let totalProfit = 0;
+    let totalFee = 0;
 
-    let sumQty = 0;
-    let sumCost = 0;
-    let sumSaved = 0;
-    let sumRevenue = 0;
-    let sumProfit = 0;
+    els.orderBody.innerHTML = state.items
+      .map((item, index) => {
+        totalClient += item.clientTotal;
+        totalProfit += item.profit;
+        if (item.passFee) totalFee += item.fee;
 
-    els.orderBody.innerHTML = orderItems
-      .map((item, idx) => {
-        sumQty += item.qty;
-        sumCost += item.totalCost;
-        sumSaved += item.totalSaved;
-        sumRevenue += item.totalRevenue;
-        sumProfit += item.totalProfit;
-
-        const lossClass = item.totalProfit < 0 ? 'style="color: var(--danger); font-weight:700;"' : 'class="col-profit"';
+        const loss = item.profit < -0.005;
+        const sub = [
+          `${item.qty}× ${formatBRL(item.unitPrice)}`,
+          item.descPct > 0.01 ? `${formatPct(item.descPct, 1)} off` : null,
+          item.fee > 0.005
+            ? item.passFee
+              ? `+ ${formatBRL(item.fee)} de taxa`
+              : 'taxa absorvida'
+            : null
+        ].filter(Boolean).join(' · ');
 
         return `
           <tr>
-            <td><strong>${escapeHtml(item.name)}</strong></td>
-            <td>${item.qty}</td>
-            <td>${formatBRL(item.totalCost)}</td>
-            <td>${item.descClientePct > 0 ? `${formatPct(item.descClientePct, 1)} (${formatBRL(item.totalSaved)})` : 'Sem desc.'}</td>
-            <td class="highlight-client">${formatBRL(item.totalRevenue)}</td>
-            <td ${lossClass}>${item.totalProfit < 0 ? '− ' : ''}${formatBRL(Math.abs(item.totalProfit))}</td>
             <td>
-              <button type="button" class="btn-remove-row" data-remove-idx="${idx}" title="Remover item" aria-label="Remover item">✕</button>
+              <strong>${escapeHtml(item.name)}</strong>
+              <span class="order-sub">${sub}</span>
+            </td>
+            <td class="col-qty">${item.qty}</td>
+            <td class="cell-client">${formatBRL(item.clientTotal)}</td>
+            <td class="cell-profit ${loss ? 'is-loss' : ''}">${loss ? '− ' : ''}${formatBRL(Math.abs(item.profit))}</td>
+            <td>
+              <button type="button" class="remove-btn" data-remove-index="${index}" aria-label="Remover ${escapeHtml(item.name)}">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
             </td>
           </tr>
         `;
       })
       .join('');
 
-    els.orderTotalQty.textContent = String(sumQty);
-    els.orderTotalCost.textContent = formatBRL(sumCost);
-    els.orderTotalSaved.textContent = formatBRL(sumSaved);
-    els.orderTotalRevenue.textContent = formatBRL(sumRevenue);
-    els.orderTotalProfit.textContent =
-      (sumProfit < 0 ? '− ' : '') + formatBRL(Math.abs(sumProfit));
-  }
+    els.orderTotalQty.textContent = String(totalQty);
+    els.orderTotalClient.textContent = formatBRL(totalClient);
+    els.orderTotalProfit.textContent = (totalProfit < 0 ? '− ' : '') + formatBRL(Math.abs(totalProfit));
+    els.orderTotalProfit.classList.toggle('is-loss', totalProfit < 0);
 
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  function copyText(text, successMsg) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(
-        () => showToast(successMsg),
-        () => fallbackCopy(text, successMsg)
-      );
+    if (totalFee > 0.005) {
+      els.orderFeeNote.hidden = false;
+      els.orderFeeNote.textContent = `Taxa da maquininha repassada ao cliente, já incluída nos valores: ${formatBRL(totalFee)}.`;
     } else {
-      fallbackCopy(text, successMsg);
+      els.orderFeeNote.hidden = true;
     }
   }
 
-  function fallbackCopy(text, successMsg) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand('copy');
-      showToast(successMsg);
-    } catch (_) {}
-    document.body.removeChild(ta);
+  function addCurrentToOrder() {
+    const c = state.current;
+    if (!c) return;
+
+    const name = c.productNameRaw || `Item #${state.items.length + 1}`;
+
+    state.items.push({
+      name,
+      qty: c.qty,
+      unitPrice: c.negotiatedUnit,
+      descPct: c.descClientePct,
+      fee: c.fee,
+      passFee: c.pay.passFee,
+      clientTotal: c.clientTotal,
+      catalogTotal: c.catalogTotal,
+      saving: Math.max(0, c.discountTotal),
+      cost: c.invested,
+      profit: c.profit
+    });
+
+    saveItems();
+    renderOrder();
+    showToast(`"${name}" adicionado ao pedido.`);
   }
 
-  // Load practical example
+  /* ------------------------------------------------------------------ *
+   * Clipboard
+   * ------------------------------------------------------------------ */
+
+  function copyText(text, successMessage) {
+    const done = () => showToast(successMessage);
+    const fallback = () => {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-1000px';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        done();
+      } catch (_) {
+        showToast('Não foi possível copiar automaticamente.');
+      }
+      document.body.removeChild(textarea);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function buildClientQuote() {
+    const c = state.current;
+    if (!c) return '';
+
+    const lines = ['ORÇAMENTO DE VENDA', ''];
+
+    if (c.productNameRaw) {
+      lines.push(`${c.productNameRaw}${c.qty > 1 ? ` (${c.qty} un.)` : ''}`);
+    } else if (c.qty > 1) {
+      lines.push(`${c.qty} unidades`);
+    } else {
+      lines.push('Produto');
+    }
+
+    lines.push('------------------------------');
+    lines.push(`Subtotal: ${formatBRL(c.negotiatedTotal)}`);
+
+    if (c.descClientePct > 0.01) {
+      lines.push(`Desconto (${formatPct(c.descClientePct, 1)}): −${formatBRL(c.discountTotal)}`);
+      lines.push(`De ${formatBRL(c.catalogTotal)} por ${formatBRL(c.negotiatedTotal)}`);
+    }
+
+    if (c.fee > 0.005 && c.pay.passFee) {
+      const feeLabel = c.pay.feePct > 0 ? ` (${formatPct(c.pay.feePct, 2)})` : '';
+      lines.push(`Acréscimo da maquininha${feeLabel}: +${formatBRL(c.fee)}`);
+    }
+
+    lines.push(`TOTAL: ${formatBRL(c.clientTotal)}`);
+
+    if (c.installments > 1) {
+      lines.push(`ou ${c.installments}x de ${formatBRL(c.installmentValue)} no cartão`);
+    }
+
+    if (c.fee > 0.005 && c.pay.passFee) {
+      lines.push('');
+      lines.push('Taxa da maquininha já incluída no total.');
+    }
+
+    return lines.join('\n');
+  }
+
+  function buildOrderQuote() {
+    if (state.items.length === 0) return '';
+
+    let totalClient = 0;
+    let totalSaving = 0;
+    let totalFee = 0;
+
+    const lines = ['ORÇAMENTO DE PEDIDO', '------------------------------'];
+
+    state.items.forEach((item) => {
+      totalClient += item.clientTotal;
+      if (item.passFee) totalFee += item.fee;
+      totalSaving += Number.isFinite(item.saving) ? item.saving : 0;
+
+      const qtyLabel = item.qty > 1 ? ` (${item.qty} un.)` : '';
+      lines.push(`• ${item.name}${qtyLabel} — ${formatBRL(item.clientTotal)}`);
+
+      if (item.descPct > 0.01) {
+        lines.push(`   ${formatPct(item.descPct, 1)} de desconto aplicado`);
+      }
+    });
+
+    lines.push('------------------------------');
+    if (totalSaving > 0.01) {
+      lines.push(`Economia total: ${formatBRL(totalSaving)}`);
+    }
+    if (totalFee > 0.01) {
+      lines.push(`Taxa da maquininha incluída: ${formatBRL(totalFee)}`);
+    }
+    lines.push(`TOTAL A PAGAR: ${formatBRL(totalClient)}`);
+
+    return lines.join('\n');
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Example / reset
+   * ------------------------------------------------------------------ */
+
   function loadExample() {
-    els.productName.value = 'Kit Hidratante + Body Splash';
+    els.productName.value = 'Kit hidratante + body splash';
     els.quantity.value = '1';
     els.vendaBase.value = '150,00';
     els.descCompra.value = '30';
     els.precoCompra.value = '';
     els.descCliente.value = '10';
-    els.taxaExtraPct.value = '';
-    els.custoExtraFixo.value = '';
+    els.precoFinalCliente.value = '';
+    els.otherCostUnit.value = '';
+    els.sliderDescCliente.value = '0';
 
-    editHistory = ['vendaBase', 'descCompra'];
-    calculatedField = null;
-    clientEditMode = 'pct';
+    state.history = ['vendaBase', 'descCompra'];
+    state.calculated = null;
+    state.clientMode = 'pct';
+    state.method = 'pix';
+    state.feeManual = false;
+    els.feePct.value = '';
+    els.feeFixed.value = '';
+    els.installments.value = '3';
+    els.passFee.checked = true;
+
+    syncPaymentUI();
+    updateBuyChips();
     recalculate();
   }
 
@@ -683,193 +1078,528 @@
     els.descCliente.value = '0';
     els.precoFinalCliente.value = '';
     els.sliderDescCliente.value = '0';
-    els.taxaExtraPct.value = '';
-    els.custoExtraFixo.value = '';
+    els.otherCostUnit.value = '';
+    els.feeFixed.value = '';
+    els.feePct.value = '';
+    els.passFee.checked = true;
+    els.calcModeHint.textContent = 'Preencha 2 campos';
 
-    editHistory = [];
-    calculatedField = null;
-    clientEditMode = 'pct';
-    updateBuyDiscountChips();
-    updateClientDiscountChips(0);
+    state.history = [];
+    state.calculated = null;
+    state.clientMode = 'pct';
+    state.method = 'pix';
+    state.feeManual = false;
+    els.installments.value = '3';
+
+    try {
+      localStorage.removeItem(STORE.form);
+    } catch (_) {}
+
+    syncPaymentUI();
+    updateBuyChips();
+    updateClientChips(0);
     recalculate();
     els.vendaBase.focus();
   }
 
-  // Theme management
-  function initTheme() {
-    const saved = localStorage.getItem(STORAGE_THEME_KEY);
-    if (saved === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      els.iconMoon.hidden = true;
-      els.iconSun.hidden = false;
+  /* ------------------------------------------------------------------ *
+   * Persistence
+   * ------------------------------------------------------------------ */
+
+  function saveForm() {
+    try {
+      const payload = {
+        fields: {
+          productName: els.productName.value,
+          quantity: els.quantity.value,
+          vendaBase: els.vendaBase.value,
+          descCompra: els.descCompra.value,
+          precoCompra: els.precoCompra.value,
+          descCliente: els.descCliente.value,
+          precoFinalCliente: els.precoFinalCliente.value,
+          feePct: els.feePct.value,
+          feeFixed: els.feeFixed.value,
+          otherCostUnit: els.otherCostUnit.value,
+          installments: els.installments.value
+        },
+        history: state.history,
+        calculated: state.calculated,
+        clientMode: state.clientMode,
+        method: state.method,
+        passFee: els.passFee.checked,
+        feeManual: state.feeManual
+      };
+      localStorage.setItem(STORE.form, JSON.stringify(payload));
+    } catch (_) {}
+  }
+
+  function scheduleSave() {
+    if (state.saveTimer) clearTimeout(state.saveTimer);
+    state.saveTimer = setTimeout(saveForm, 350);
+  }
+
+  function restoreForm() {
+    let saved;
+    try {
+      saved = JSON.parse(localStorage.getItem(STORE.form) || 'null');
+    } catch (_) {
+      saved = null;
     }
+    if (!saved || !saved.fields) return false;
+
+    const f = saved.fields;
+    const assign = (el, value) => {
+      if (typeof value === 'string' && el) el.value = value;
+    };
+
+    assign(els.productName, f.productName);
+    assign(els.quantity, f.quantity);
+    assign(els.vendaBase, f.vendaBase);
+    assign(els.descCompra, f.descCompra);
+    assign(els.precoCompra, f.precoCompra);
+    assign(els.descCliente, f.descCliente);
+    assign(els.precoFinalCliente, f.precoFinalCliente);
+    assign(els.feePct, f.feePct);
+    assign(els.feeFixed, f.feeFixed);
+    assign(els.otherCostUnit, f.otherCostUnit);
+    assign(els.installments, f.installments);
+
+    if (['pix', 'debito', 'credito', 'parcelado'].includes(saved.method)) {
+      state.method = saved.method;
+    }
+    state.clientMode = saved.clientMode === 'finalPrice' ? 'finalPrice' : 'pct';
+    state.feeManual = !!saved.feeManual;
+    els.passFee.checked = saved.passFee !== false;
+
+    state.history = Array.isArray(saved.history)
+      ? saved.history.filter((k) => BASE_FIELDS.includes(k)).slice(-2)
+      : [];
+    state.calculated = BASE_FIELDS.includes(saved.calculated) ? saved.calculated : null;
+
+    if (state.history.length === 0) {
+      BASE_FIELDS.forEach((k) => {
+        if (isValidBaseValue(k, parseDecimal(els[k].value))) state.history.push(k);
+      });
+      state.history = state.history.slice(-2);
+    }
+
+    syncPaymentUI();
+    return true;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Theme
+   * ------------------------------------------------------------------ */
+
+  const prefersDark = window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
+
+  function applyTheme(theme, persist) {
+    const isDark = theme === 'dark';
+    if (isDark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    if (els.iconMoon) els.iconMoon.hidden = isDark;
+    if (els.iconSun) els.iconSun.hidden = !isDark;
+    if (els.metaThemeColor) {
+      els.metaThemeColor.setAttribute('content', isDark ? '#0F1622' : '#FFFFFF');
+    }
+    if (persist) {
+      try {
+        localStorage.setItem(STORE.theme, theme);
+      } catch (_) {}
+    }
+  }
+
+  function initTheme() {
+    let saved = null;
+    try {
+      saved = localStorage.getItem(STORE.theme);
+    } catch (_) {}
+    const theme = saved || (prefersDark && prefersDark.matches ? 'dark' : 'light');
+    applyTheme(theme, false);
   }
 
   function toggleTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    if (isDark) {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem(STORAGE_THEME_KEY, 'light');
-      els.iconMoon.hidden = false;
-      els.iconSun.hidden = true;
-    } else {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem(STORAGE_THEME_KEY, 'dark');
-      els.iconMoon.hidden = true;
-      els.iconSun.hidden = false;
+    applyTheme(isDark ? 'light' : 'dark', true);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Mobile tabs
+   * ------------------------------------------------------------------ */
+
+  function setView(view, shouldScroll) {
+    const allowed = ['calc', 'result', 'order'];
+    const target = allowed.includes(view) ? view : 'calc';
+    document.body.setAttribute('data-view', target);
+
+    document.querySelectorAll('.tab[data-view]').forEach((tab) => {
+      const active = tab.getAttribute('data-view') === target;
+      tab.classList.toggle('active', active);
+      if (active) {
+        tab.setAttribute('aria-current', 'page');
+      } else {
+        tab.removeAttribute('aria-current');
+      }
+    });
+
+    if (shouldScroll !== false) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
-  // Event Listeners
-  BASE_FIELDS.forEach((fieldKey) => {
-    els[fieldKey].addEventListener('input', () => onBaseFieldEdit(fieldKey));
-  });
+  /* ------------------------------------------------------------------ *
+   * PWA: install + service worker
+   * ------------------------------------------------------------------ */
 
-  // Buy discount quick chips
-  document.querySelectorAll('[data-buy-disc]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      els.descCompra.value = btn.getAttribute('data-buy-disc');
-      onBaseFieldEdit('descCompra');
+  const isStandalone = () => {
+    return (
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator.standalone === true
+    );
+  };
+
+  const isIOS = () => {
+    const ua = window.navigator.userAgent || '';
+    return (
+      /iPad|iPhone|iPod/.test(ua) ||
+      (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1)
+    );
+  };
+
+  function installSheetContent() {
+    const ua = window.navigator.userAgent || '';
+    const isAndroid = /Android/i.test(ua);
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+
+    if (isIOS()) {
+      return `
+        <ol>
+          <li>Abra o Margix no <strong>Safari</strong>.</li>
+          <li>Toque no botão <strong>Compartilhar</strong> (quadrado com a seta para cima).</li>
+          <li>Escolha <strong>Adicionar à Tela de Início</strong>.</li>
+          <li>Toque em <strong>Adicionar</strong>. Pronto: o Margix vira um app no seu celular.</li>
+        </ol>
+        <p class="sheet-note">No iPhone, a instalação precisa ser feita pelo Safari. O app abre em tela cheia e funciona offline.</p>
+      `;
+    }
+
+    if (isAndroid) {
+      return `
+        <ol>
+          <li>Toque no menu do navegador (<strong>⋮</strong> no canto superior).</li>
+          <li>Escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
+          <li>Confirme. O Margix abre em tela cheia e funciona offline.</li>
+        </ol>
+        <p class="sheet-note">No Chrome, também aparece um botão de instalação na barra de endereço.</p>
+      `;
+    }
+
+    if (isMobile) {
+      return `
+        <ol>
+          <li>Abra o menu do navegador.</li>
+          <li>Escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
+          <li>Confirme. O Margix abre em tela cheia e funciona offline.</li>
+        </ol>
+      `;
+    }
+
+    return `
+      <ol>
+        <li>No <strong>Chrome</strong> ou <strong>Edge</strong>, procure o ícone de instalação na barra de endereço (à direita da URL).</li>
+        <li>Clique em <strong>Instalar</strong> e confirme.</li>
+        <li>O Margix abre em uma janela própria e funciona offline.</li>
+      </ol>
+      <p class="sheet-note">Para levar para o celular, abra este site no navegador do aparelho e use “Adicionar à tela inicial”.</p>
+    `;
+  }
+
+  function openInstallSheet() {
+    if (!els.installSheet || typeof els.installSheet.showModal !== 'function') {
+      showToast('Use o menu do navegador e escolha "Instalar app".');
+      return;
+    }
+    els.installSheetBody.innerHTML = installSheetContent();
+    if (!els.installSheet.open) els.installSheet.showModal();
+  }
+
+  function setupPWA() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('./sw.js', { scope: './', updateViaCache: 'none' })
+          .catch(() => {
+            /* offline support unavailable */
+          });
+      });
+    }
+
+    // Always offer the install affordance until the app is installed.
+    const installed = isStandalone();
+    els.btnInstall.hidden = installed;
+    els.btnInstallFooter.hidden = installed;
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      state.deferredPrompt = event;
+      els.btnInstall.hidden = false;
+      els.btnInstall.dataset.mode = 'prompt';
     });
-  });
 
-  // Client discount % input
-  els.descCliente.addEventListener('input', () => {
-    clientEditMode = 'pct';
-    recalculate();
-  });
+    window.addEventListener('appinstalled', () => {
+      state.deferredPrompt = null;
+      els.btnInstall.hidden = true;
+      els.btnInstallFooter.hidden = true;
+      showToast('Margix instalado no seu celular!');
+      scheduleSave();
+    });
+  }
 
-  // Client final price R$ input
-  els.precoFinalCliente.addEventListener('input', () => {
-    clientEditMode = 'finalPrice';
-    recalculate();
-  });
+  async function handleInstallClick() {
+    if (state.deferredPrompt) {
+      const prompt = state.deferredPrompt;
+      state.deferredPrompt = null;
+      prompt.prompt();
+      try {
+        const choice = await prompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          els.btnInstall.hidden = true;
+          els.btnInstallFooter.hidden = true;
+          showToast('Instalando o Margix…');
+        }
+      } catch (_) {}
+      return;
+    }
+    openInstallSheet();
+  }
 
-  // Slider
-  els.sliderDescCliente.addEventListener('input', () => {
-    clientEditMode = 'pct';
-    const v = parseFloat(els.sliderDescCliente.value);
-    els.descCliente.value = Number.isInteger(v) ? String(v) : formatNumberInput(v, 1);
-    recalculate();
-  });
+  /* ------------------------------------------------------------------ *
+   * Events
+   * ------------------------------------------------------------------ */
 
-  // Client discount chips
-  document.querySelectorAll('[data-client-disc]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      clientEditMode = 'pct';
-      els.descCliente.value = btn.getAttribute('data-client-disc');
+  function bindEvents() {
+    BASE_FIELDS.forEach((key) => {
+      els[key].addEventListener('input', () => onBaseFieldEdit(key));
+    });
+
+    document.querySelectorAll('[data-buy-disc]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        els.descCompra.value = btn.getAttribute('data-buy-disc');
+        onBaseFieldEdit('descCompra');
+      });
+    });
+
+    els.descCliente.addEventListener('input', () => {
+      state.clientMode = 'pct';
       recalculate();
     });
-  });
 
-  // Product & Qty & Extra costs
-  els.productName.addEventListener('input', recalculate);
-  els.quantity.addEventListener('input', recalculate);
-  els.taxaExtraPct.addEventListener('input', recalculate);
-  els.custoExtraFixo.addEventListener('input', recalculate);
-
-  els.qtyMinus.addEventListener('click', () => {
-    const cur = parseInt(els.quantity.value, 10) || 1;
-    if (cur > 1) {
-      els.quantity.value = String(cur - 1);
+    els.precoFinalCliente.addEventListener('input', () => {
+      state.clientMode = 'finalPrice';
       recalculate();
-    }
-  });
-
-  els.qtyPlus.addEventListener('click', () => {
-    const cur = parseInt(els.quantity.value, 10) || 1;
-    els.quantity.value = String(cur + 1);
-    recalculate();
-  });
-
-  // Click row in negotiation table to apply discount
-  els.scenariosBody.addEventListener('click', (e) => {
-    const row = e.target.closest('tr[data-scenario-pct]');
-    if (!row) return;
-    clientEditMode = 'pct';
-    els.descCliente.value = row.getAttribute('data-scenario-pct');
-    recalculate();
-  });
-
-  // Add item to order simulator
-  els.btnAddItem.addEventListener('click', () => {
-    if (!currentCalc) return;
-    const itemName = els.productName.value.trim() || `Item #${orderItems.length + 1}`;
-    orderItems.push({
-      name: itemName,
-      qty: currentCalc.qty,
-      descClientePct: currentCalc.descClientePct,
-      totalCost: currentCalc.totalPurchaseCost + currentCalc.totalFees,
-      totalSaved: currentCalc.totalClientSaving,
-      totalRevenue: currentCalc.totalClientPrice,
-      totalProfit: currentCalc.totalNetProfit
     });
-    saveOrderItems();
-    renderOrderSection();
-    showToast(`"${itemName}" adicionado à simulação de pedido.`);
-  });
 
-  // Copy client quote (only client-safe info, never reseller cost/profit!)
-  els.btnCopyClient.addEventListener('click', () => {
-    if (!currentCalc) return;
-    const c = currentCalc;
-    const lines = [];
-    if (els.productName.value.trim()) {
-      lines.push(`Produto: ${els.productName.value.trim()}${c.qty > 1 ? ` (${c.qty} un.)` : ''}`);
-    } else if (c.qty > 1) {
-      lines.push(`Quantidade: ${c.qty} unidades`);
-    }
-    if (c.descClientePct > 0.04) {
-      lines.push(`Valor de tabela: ${formatBRL(c.totalCatalog)}`);
-      lines.push(`Desconto especial (${formatPct(c.descClientePct, 1)}): -${formatBRL(c.totalClientSaving)}`);
-    }
-    lines.push(`Valor final: ${formatBRL(c.totalClientPrice)}`);
-    copyText(lines.join('\n'), 'Resumo para o cliente copiado!');
-  });
-
-  // Order table actions
-  els.orderBody.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-remove-idx]');
-    if (!btn) return;
-    const idx = parseInt(btn.getAttribute('data-remove-idx'), 10);
-    if (idx >= 0 && idx < orderItems.length) {
-      orderItems.splice(idx, 1);
-      saveOrderItems();
-      renderOrderSection();
-    }
-  });
-
-  els.btnClearOrder.addEventListener('click', () => {
-    orderItems = [];
-    saveOrderItems();
-    renderOrderSection();
-    showToast('Lista de pedido limpa.');
-  });
-
-  els.btnCopyOrderQuote.addEventListener('click', () => {
-    if (orderItems.length === 0) return;
-    let totalRev = 0;
-    let totalSav = 0;
-    const lines = ['ORÇAMENTO DE PEDIDO', '------------------------'];
-    orderItems.forEach((it) => {
-      totalRev += it.totalRevenue;
-      totalSav += it.totalSaved;
-      lines.push(`• ${it.qty}x ${it.name}: ${formatBRL(it.totalRevenue)}`);
+    els.sliderDescCliente.addEventListener('input', () => {
+      state.clientMode = 'pct';
+      const value = parseFloat(els.sliderDescCliente.value);
+      els.descCliente.value = Number.isInteger(value)
+        ? String(value)
+        : formatNumberInput(value, 1);
+      recalculate();
     });
-    lines.push('------------------------');
-    if (totalSav > 0.01) {
-      lines.push(`Economia total aplicada: ${formatBRL(totalSav)}`);
+
+    document.querySelectorAll('[data-client-disc]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.clientMode = 'pct';
+        els.descCliente.value = btn.getAttribute('data-client-disc');
+        recalculate();
+      });
+    });
+
+    els.productName.addEventListener('input', scheduleSave);
+    els.productName.addEventListener('input', recalculate);
+
+    els.quantity.addEventListener('input', recalculate);
+
+    els.qtyMinus.addEventListener('click', () => {
+      const current = clampInt(els.quantity.value, 1, MAX_QTY);
+      if (current > 1) {
+        els.quantity.value = String(current - 1);
+        recalculate();
+      }
+    });
+
+    els.qtyPlus.addEventListener('click', () => {
+      const current = clampInt(els.quantity.value, 1, MAX_QTY);
+      els.quantity.value = String(current + 1);
+      recalculate();
+    });
+
+    els.methodGrid.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-method]');
+      if (!btn) return;
+      applyMethod(btn.getAttribute('data-method'));
+    });
+
+    els.installments.addEventListener('change', () => {
+      if (state.method === 'parcelado' && !state.feeManual) {
+        els.feePct.value = formatNumberInput(
+          suggestedParceladoFee(els.installments.value),
+          2
+        );
+      }
+      recalculate();
+    });
+
+    els.feePct.addEventListener('input', () => {
+      state.feeManual = true;
+      recalculate();
+    });
+
+    els.feePct.addEventListener('blur', () => {
+      const value = parseDecimal(els.feePct.value);
+      if (!Number.isFinite(value)) return;
+      const clamped = clamp(value, 0, MAX_FEE_PCT);
+      if (clamped !== value) {
+        els.feePct.value = formatNumberInput(clamped, 2);
+        recalculate();
+        showToast(`Taxa limitada a ${formatPct(MAX_FEE_PCT, 0)}.`);
+      }
+    });
+
+    els.feeFixed.addEventListener('blur', () => {
+      const value = parseDecimal(els.feeFixed.value);
+      if (!Number.isFinite(value)) return;
+      const clamped = clamp(value, 0, MAX_FEE_FIXED);
+      if (clamped !== value) {
+        els.feeFixed.value = formatNumberInput(clamped, 2);
+        recalculate();
+      }
+    });
+
+    els.quantity.addEventListener('blur', () => {
+      const qty = clampInt(els.quantity.value, 1, MAX_QTY);
+      if (String(qty) !== els.quantity.value) {
+        els.quantity.value = String(qty);
+        recalculate();
+      }
+    });
+
+    els.feeFixed.addEventListener('input', recalculate);
+
+    els.passFee.addEventListener('change', recalculate);
+
+    els.otherCostUnit.addEventListener('input', recalculate);
+
+    els.scenariosBody.addEventListener('click', (event) => {
+      const row = event.target.closest('tr[data-scenario-pct]');
+      if (!row) return;
+      state.clientMode = 'pct';
+      els.descCliente.value = row.getAttribute('data-scenario-pct');
+      recalculate();
+    });
+
+    els.btnAddItem.addEventListener('click', addCurrentToOrder);
+
+    els.btnCopyClient.addEventListener('click', () => {
+      const quote = buildClientQuote();
+      if (quote) copyText(quote, 'Resumo do cliente copiado.');
+    });
+
+    els.orderBody.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-remove-index]');
+      if (!btn) return;
+      const index = parseInt(btn.getAttribute('data-remove-index'), 10);
+      if (Number.isInteger(index) && index >= 0 && index < state.items.length) {
+        state.items.splice(index, 1);
+        saveItems();
+        renderOrder();
+      }
+    });
+
+    els.btnClearOrder.addEventListener('click', () => {
+      if (state.items.length === 0) return;
+      state.items = [];
+      saveItems();
+      renderOrder();
+      showToast('Pedido limpo.');
+    });
+
+    els.btnCopyOrderQuote.addEventListener('click', () => {
+      const quote = buildOrderQuote();
+      if (quote) copyText(quote, 'Orçamento copiado para enviar ao cliente.');
+    });
+
+    els.btnExample.addEventListener('click', () => {
+      loadExample();
+      setView('calc', false);
+      showToast('Exemplo carregado.');
+    });
+
+    els.btnClear.addEventListener('click', clearAll);
+    els.btnTheme.addEventListener('click', toggleTheme);
+
+    els.btnInstall.addEventListener('click', handleInstallClick);
+    els.btnInstallFooter.addEventListener('click', handleInstallClick);
+    els.installSheetClose.addEventListener('click', () => els.installSheet.close());
+    els.installSheet.addEventListener('click', (event) => {
+      if (event.target === els.installSheet) els.installSheet.close();
+    });
+
+    document.querySelectorAll('.tab[data-view], [data-goto]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setView(btn.getAttribute('data-view') || btn.getAttribute('data-goto'));
+      });
+    });
+
+    // persistence (debounced) for form fields
+    ['input', 'change'].forEach((evt) => {
+      document
+        .querySelectorAll(
+          '#productName, #quantity, #vendaBase, #descCompra, #precoCompra, #descCliente, #precoFinalCliente, #feePct, #feeFixed, #otherCostUnit, #installments, #passFee'
+        )
+        .forEach((el) => el.addEventListener(evt, scheduleSave));
+    });
+
+    window.addEventListener('beforeunload', saveForm);
+
+    if (prefersDark && typeof prefersDark.addEventListener === 'function') {
+      prefersDark.addEventListener('change', (event) => {
+        let saved = null;
+        try {
+          saved = localStorage.getItem(STORE.theme);
+        } catch (_) {}
+        if (!saved) applyTheme(event.matches ? 'dark' : 'light', false);
+      });
     }
-    lines.push(`TOTAL A PAGAR: ${formatBRL(totalRev)}`);
-    copyText(lines.join('\n'), 'Orçamento completo copiado para enviar ao cliente!');
-  });
+  }
 
-  els.btnExample.addEventListener('click', loadExample);
-  els.btnClear.addEventListener('click', clearAll);
-  els.btnTheme.addEventListener('click', toggleTheme);
+  /* ------------------------------------------------------------------ *
+   * Boot
+   * ------------------------------------------------------------------ */
 
-  // Initialize
-  initTheme();
-  renderOrderSection();
-  loadExample();
+  function init() {
+    initTheme();
+    bindEvents();
+    setupPWA();
+
+    const restored = restoreForm();
+    if (!restored) loadExample();
+
+    updateBuyChips();
+    renderOrder();
+    recalculate();
+    setView('calc', false);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
