@@ -122,6 +122,15 @@
     btnCopyOrderQuote: $('btnCopyOrderQuote'),
     btnClearOrder: $('btnClearOrder'),
 
+    mobileSummaryGo: $('mobileSummaryGo'),
+    msClient: $('msClient'),
+    msClientSub: $('msClientSub'),
+    msProfit: $('msProfit'),
+    msProfitBox: $('msProfitBox'),
+    mobileOrderEmpty: $('mobileOrderEmpty'),
+    mobileOrderEmptyGo: $('mobileOrderEmptyGo'),
+    tabOrderBadge: $('tabOrderBadge'),
+
     btnExample: $('btnExample'),
     btnClear: $('btnClear'),
     btnTheme: $('btnTheme'),
@@ -147,12 +156,19 @@
     method: 'pix',
     installments: 1,
     feeMode: 'client',
+    view: 'calc',
     items: loadItems(),
     current: null,
     toastTimer: null,
     saveTimer: null,
     deferredPrompt: null
   };
+
+  const MOBILE_QUERY = window.matchMedia
+    ? window.matchMedia('(max-width: 768px)')
+    : null;
+  const isMobileLayout = () => !!(MOBILE_QUERY && MOBILE_QUERY.matches);
+  const VIEWS = ['calc', 'result', 'order'];
 
   /* ------------------------------------------------------------------ *
    * Formatting helpers
@@ -560,6 +576,8 @@
 
     els.scenariosBody.innerHTML =
       '<tr><td colspan="5" class="empty-table-cell">Preencha os valores base para visualizar os cenários de desconto.</td></tr>';
+
+    updateMobileSummary(null);
   }
 
   function renderDashboard(c) {
@@ -674,6 +692,8 @@
 
     els.btnAddItem.disabled = false;
     els.btnCopyClient.disabled = false;
+
+    updateMobileSummary(c);
   }
 
   function renderScenarios(c) {
@@ -702,6 +722,47 @@
         `;
       })
       .join('');
+  }
+
+  function setView(view) {
+    const next = VIEWS.includes(view) ? view : 'calc';
+    state.view = next;
+    document.body.setAttribute('data-view', next);
+
+    document.querySelectorAll('.tabbar .tab').forEach((btn) => {
+      const active = btn.getAttribute('data-view') === next;
+      btn.classList.toggle('active', active);
+      if (active) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+  }
+
+  function updateMobileSummary(calc) {
+    if (!els.msClient) return;
+
+    if (!calc) {
+      els.msClient.textContent = 'R$ 0,00';
+      els.msClientSub.textContent = 'Sem cálculo';
+      els.msProfit.textContent = 'R$ 0,00';
+      els.msProfitBox.classList.remove('is-loss');
+      return;
+    }
+
+    els.msClient.textContent = formatBRL(calc.clientTotal);
+
+    const parts = [];
+    if (calc.installments > 1) {
+      parts.push(`${calc.installments}x de ${formatBRL(calc.clientTotal / calc.installments)}`);
+    }
+    if (calc.fee > 0.005) parts.push(`${formatBRL(calc.fee)} de taxa`);
+    if (parts.length === 0) {
+      parts.push(calc.qty > 1 ? `${calc.qty} un.` : 'À vista no Pix');
+    }
+    els.msClientSub.textContent = parts.join(' • ');
+
+    els.msProfit.textContent =
+      (calc.profit < 0 ? '− ' : '') + formatBRL(Math.abs(calc.profit));
+    els.msProfitBox.classList.toggle('is-loss', calc.profit < 0);
   }
 
   function updateFeeModeHint(fee, pay) {
@@ -844,12 +905,17 @@
   }
 
   function renderOrder() {
-    if (state.items.length === 0) {
-      els.orderSection.hidden = true;
-      return;
-    }
+    const hasItems = state.items.length > 0;
 
-    els.orderSection.hidden = false;
+    els.orderSection.hidden = !hasItems;
+    if (els.tabOrderBadge) {
+      els.tabOrderBadge.hidden = !hasItems;
+      els.tabOrderBadge.textContent = String(state.items.length);
+    }
+    if (els.mobileOrderEmpty) els.mobileOrderEmpty.hidden = hasItems;
+
+    if (!hasItems) return;
+
     els.orderCount.textContent = String(state.items.length);
 
     let totalQty = 0;
@@ -918,6 +984,7 @@
 
     saveItems();
     renderOrder();
+    if (isMobileLayout()) setView('order');
     showToast(`"${name}" adicionado à simulação de pedido.`);
   }
 
@@ -1467,6 +1534,20 @@
     els.btnClear.addEventListener('click', clearAll);
     els.btnTheme.addEventListener('click', toggleTheme);
 
+    document.querySelectorAll('.tabbar .tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setView(btn.getAttribute('data-view'));
+        if (isMobileLayout()) window.scrollTo({ top: 0, behavior: 'auto' });
+      });
+    });
+
+    if (els.mobileSummaryGo) {
+      els.mobileSummaryGo.addEventListener('click', () => setView('result'));
+    }
+    if (els.mobileOrderEmptyGo) {
+      els.mobileOrderEmptyGo.addEventListener('click', () => setView('result'));
+    }
+
     els.btnInstall.addEventListener('click', handleInstallClick);
     els.installSheetClose.addEventListener('click', () => els.installSheet.close());
     els.installSheet.addEventListener('click', (event) => {
@@ -1508,6 +1589,7 @@
     if (!restored) loadExample();
 
     updateBuyChips();
+    setView('calc');
     renderOrder();
     recalculate();
   }

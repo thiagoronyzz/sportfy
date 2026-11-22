@@ -60,11 +60,21 @@
           </svg>
           <span>Instalar</span>
         </button>
-        <button type="button" id="btnExample" class="btn btn-ghost" title="Preencher um exemplo prático">
-           Carregar Exemplo
+        <button type="button" id="btnExample" class="btn btn-ghost btn-compact" title="Preencher um exemplo prático" aria-label="Carregar exemplo">
+          <svg class="btn-icon-only" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3.5l1.7 4.8 4.8 1.7-4.8 1.7L12 16.5l-1.7-4.8L5.5 10l4.8-1.7z"></path>
+            <path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"></path>
+          </svg>
+          <span class="btn-text">Carregar Exemplo</span>
         </button>
-        <button type="button" id="btnClear" class="btn btn-outline" title="Limpar todos os campos">
-          Limpar
+        <button type="button" id="btnClear" class="btn btn-outline btn-compact" title="Limpar todos os campos" aria-label="Limpar todos os campos">
+          <svg class="btn-icon-only" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M6 6l1 14h10l1-14"></path>
+            <path d="M10 11v5M14 11v5"></path>
+          </svg>
+          <span class="btn-text">Limpar</span>
         </button>
         <button type="button" id="btnTheme" class="btn-icon" aria-label="Alternar tema claro/escuro" title="Alternar tema">
           <svg id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -493,6 +503,55 @@
       <span>Cálculos em tempo real direto no seu navegador.</span>
     </div>
   </footer>
+
+
+  <!-- ================= VERSÃO DE CELULAR (app) ================= -->
+  <section class="container mobile-order-empty" id="mobileOrderEmpty" hidden>
+    <div class="panel">
+      <span class="eyebrow">Resumo Acumulado</span>
+      <h2 class="section-title">Seu pedido está vazio</h2>
+      <p class="mobile-empty-text">Calcule uma venda na aba <strong>Resultado</strong> e toque em “Adicionar à simulação de pedido”.</p>
+      <button type="button" class="btn btn-primary btn-block" id="mobileOrderEmptyGo">Ir para o Resultado</button>
+    </div>
+  </section>
+
+  <div class="mobile-summary" id="mobileSummary">
+    <button type="button" class="mobile-summary-main" id="mobileSummaryGo" aria-label="Ver o resultado completo">
+      <span class="ms-label">Cliente paga</span>
+      <strong class="ms-value" id="msClient">R$ 0,00</strong>
+      <span class="ms-sub" id="msClientSub">Sem cálculo</span>
+    </button>
+    <div class="ms-profit" id="msProfitBox">
+      <span class="ms-label">Seu lucro</span>
+      <strong class="ms-value" id="msProfit">R$ 0,00</strong>
+    </div>
+  </div>
+
+  <nav class="tabbar" aria-label="Seções do app">
+    <button type="button" class="tab active" data-view="calc" aria-current="page">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="3" width="16" height="18" rx="3"></rect>
+        <path d="M8 7h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 18h6"></path>
+      </svg>
+      <span>Calcular</span>
+    </button>
+    <button type="button" class="tab" data-view="result">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>
+      </svg>
+      <span>Resultado</span>
+    </button>
+    <button type="button" class="tab" data-view="order">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 6h15l-1.5 9h-12z"></path>
+        <circle cx="9" cy="20" r="1.4"></circle>
+        <circle cx="18" cy="20" r="1.4"></circle>
+        <path d="M6 6 5 3H2"></path>
+      </svg>
+      <span>Pedido</span>
+      <span class="tab-badge" id="tabOrderBadge" hidden>0</span>
+    </button>
+  </nav>
 
   <dialog class="sheet" id="installSheet" aria-labelledby="installTitle">
     <div class="sheet-head">

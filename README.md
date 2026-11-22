@@ -47,9 +47,10 @@ Funciona como **PWA**: pode ser instalada no celular, abre em tela cheia e funci
 - **Service worker** (`sw.js`) com cache do app shell: depois da primeira visita, abre offline.
 - Botão **Instalar** no topo quando o navegador permitir; no iPhone, um guia explica
   “Adicionar à Tela de Início”.
-- Layout original preservado: painel de entradas à esquerda e resultados à direita no
-  desktop; no celular tudo empilha em uma coluna (Dados → Condição comercial → Recebimento
-  → Resultado → Pedido), sem abas.
+- **Desktop preservado**: painel de entradas à esquerda e resultados à direita, sem mudanças.
+- **Versão de celular (app)**: abas fixas **Calcular / Resultado / Pedido**, barra de resumo
+  com o total do cliente e o lucro, atalhos em ícone no topo e botão **Instalar** visível.
+  O mesmo conteúdo do desktop, dividido por aba e com alvos de toque maiores.
 - Identidade visual original: fonte **Inter**, logo tipográfica **MARGIX** e paleta esmeralda.
 - Tema claro/escuro, com preferência do sistema e persistência local.
 
