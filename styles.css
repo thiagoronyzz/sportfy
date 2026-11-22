@@ -622,6 +622,12 @@ button {
   background: var(--accent-soft);
 }
 
+.mini-card .input,
+.mini-card .stepper,
+.details .input {
+  background: var(--surface);
+}
+
 .mini-card-head {
   display: flex;
   align-items: center;
@@ -1928,7 +1934,7 @@ input[type="range"]:focus-visible {
   }
 
   .order-table td:first-child {
-    min-width: 120px;
+    min-width: 100px;
   }
 
   .order-panel .panel-head {
