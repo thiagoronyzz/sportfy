@@ -8,10 +8,17 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#0D1526",
-  "theme_color": "#0D1526",
-  "categories": ["business", "finance", "productivity"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#F4F6F9",
+  "theme_color": "#FFFFFF",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",

@@ -7,7 +7,8 @@
 
   const STORE = {
     order: 'margix:orders:v2',
-    theme: 'margix:theme:v1',
+    legacyOrder: 'margix_order_items_v1',
+    theme: 'margix_theme_v1',
     form: 'margix:form:v2'
   };
 
@@ -17,7 +18,6 @@
     credito: { label: 'Crédito', fee: 4.99 }
   };
 
-  // Estimated market fee for credit, growing with the number of installments.
   const CREDIT_BASE_FEE = 4.99;
   const CREDIT_STEP_FEE = 1.09;
   const MAX_INSTALLMENTS = 12;
@@ -44,7 +44,6 @@
   const $ = (id) => document.getElementById(id);
 
   const els = {
-    // operation
     productName: $('productName'),
     quantity: $('quantity'),
     qtyMinus: $('qtyMinus'),
@@ -55,7 +54,6 @@
     calcModeHint: $('calcModeHint'),
     markupInfo: $('markupInfo'),
 
-    // client discount
     descCliente: $('descCliente'),
     precoFinalCliente: $('precoFinalCliente'),
     sliderDescCliente: $('sliderDescCliente'),
@@ -63,89 +61,76 @@
     sliderMaxLabel: $('sliderMaxLabel'),
     maxDiscountPill: $('maxDiscountPill'),
 
-    // payment
-    methodGrid: $('methodGrid'),
-    feePct: $('feePct'),
-    feeFixed: $('feeFixed'),
-    installmentsField: $('installmentsField'),
+    methodChips: $('methodChips'),
+    taxaExtraPct: $('taxaExtraPct'),
+    custoExtraFixo: $('custoExtraFixo'),
+    outroCustoUnit: $('outroCustoUnit'),
+    installmentsGroup: $('installmentsGroup'),
     installmentsChips: $('installmentsChips'),
     installmentsHint: $('installmentsHint'),
-    passFee: $('passFee'),
-    passFeeHint: $('passFeeHint'),
-    otherCostUnit: $('otherCostUnit'),
+    feeModeChips: $('feeModeChips'),
+    feeModePill: $('feeModePill'),
+    feeModeHint: $('feeModeHint'),
 
-    // hero
     resultTitle: $('resultTitle'),
     healthBadge: $('healthBadge'),
-    kpiClientPrice: $('kpiClientPrice'),
-    heroLines: $('heroLines'),
-    heroSubtotal: $('heroSubtotal'),
-    heroSubtotalRow: $('heroSubtotalRow'),
-    heroFeeRow: $('heroFeeRow'),
-    heroFeeLabel: $('heroFeeLabel'),
-    heroFee: $('heroFee'),
-    heroReceivesRow: $('heroReceivesRow'),
-    heroReceives: $('heroReceives'),
-    heroInstallmentsRow: $('heroInstallmentsRow'),
-    heroInstallments: $('heroInstallments'),
     lossAlert: $('lossAlert'),
     lossAlertText: $('lossAlertText'),
-    legProfitLabel: $('legProfitLabel'),
+
+    kpiClientPrice: $('kpiClientPrice'),
+    kpiClientSub: $('kpiClientSub'),
+    kpiProfitCard: $('kpiProfitCard'),
     kpiNetProfit: $('kpiNetProfit'),
     kpiProfitSub: $('kpiProfitSub'),
-    kpiReceiveSub: $('kpiReceiveSub'),
-    btnAddItem: $('btnAddItem'),
-    btnCopyClient: $('btnCopyClient'),
+    kpiTotalCost: $('kpiTotalCost'),
+    kpiCostSub: $('kpiCostSub'),
+    kpiClientSaving: $('kpiClientSaving'),
+    kpiSavingSub: $('kpiSavingSub'),
 
-    // details
+    breakdownRefTotal: $('breakdownRefTotal'),
     barCost: $('barCost'),
     barFees: $('barFees'),
     barProfit: $('barProfit'),
-    barLoss: $('barLoss'),
+    barDiscount: $('barDiscount'),
+
     legCost: $('legCost'),
     legFeesWrap: $('legFeesWrap'),
     legFees: $('legFees'),
-    legProfitName: $('legProfitName'),
-    legProfit: $('legProfit'),
     dotProfit: $('dotProfit'),
-    savingNote: $('savingNote'),
-    metricCost: $('metricCost'),
-    metricReceive: $('metricReceive'),
-    metricSaving: $('metricSaving'),
-    metricMarkup: $('metricMarkup'),
+    legProfitLabel: $('legProfitLabel'),
+    legProfit: $('legProfit'),
+    legDiscount: $('legDiscount'),
+
+    metricRoi: $('metricRoi'),
     metricMargin: $('metricMargin'),
     metricBreakEven: $('metricBreakEven'),
 
+    btnAddItem: $('btnAddItem'),
+    btnCopyClient: $('btnCopyClient'),
+    copyBtnText: $('copyBtnText'),
+
     scenariosBody: $('scenariosBody'),
 
-    // order
     orderSection: $('orderSection'),
     orderCount: $('orderCount'),
-    orderEmpty: $('orderEmpty'),
-    orderTableWrap: $('orderTableWrap'),
     orderBody: $('orderBody'),
     orderTotalQty: $('orderTotalQty'),
-    orderTotalClient: $('orderTotalClient'),
+    orderTotalCost: $('orderTotalCost'),
+    orderTotalSaved: $('orderTotalSaved'),
+    orderTotalRevenue: $('orderTotalRevenue'),
     orderTotalProfit: $('orderTotalProfit'),
-    orderFeeNote: $('orderFeeNote'),
     btnCopyOrderQuote: $('btnCopyOrderQuote'),
     btnClearOrder: $('btnClearOrder'),
-    tabOrderBadge: $('tabOrderBadge'),
 
-    // chrome
     btnExample: $('btnExample'),
     btnClear: $('btnClear'),
     btnTheme: $('btnTheme'),
     iconMoon: $('iconMoon'),
     iconSun: $('iconSun'),
     toast: $('toast'),
-    mobileSummary: $('mobileSummary'),
-    mobileSummaryValue: $('mobileSummaryValue'),
     metaThemeColor: $('metaThemeColor'),
 
-    // install
     btnInstall: $('btnInstall'),
-    btnInstallFooter: $('btnInstallFooter'),
     installSheet: $('installSheet'),
     installSheetClose: $('installSheetClose'),
     installSheetBody: $('installSheetBody')
@@ -161,8 +146,9 @@
     clientMode: 'pct',
     method: 'pix',
     installments: 1,
-    current: null,
+    feeMode: 'client',
     items: loadItems(),
+    current: null,
     toastTimer: null,
     saveTimer: null,
     deferredPrompt: null
@@ -180,8 +166,7 @@
   });
 
   function formatBRL(value) {
-    const v = Number.isFinite(value) ? value : 0;
-    return brlFormatter.format(v);
+    return brlFormatter.format(Number.isFinite(value) ? value : 0);
   }
 
   function formatPct(value, decimals = 1) {
@@ -259,7 +244,7 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * Base values (two of three: sale price, purchase discount, cost)
+   * Base values (two of three)
    * ------------------------------------------------------------------ */
 
   function isValidBaseValue(key, value) {
@@ -269,9 +254,8 @@
   }
 
   function readActivePayment() {
-    const feePctRaw = numOr(els.feePct.value, 0);
-    const feePct = clamp(feePctRaw, 0, MAX_FEE_PCT);
-    const feeFixed = clamp(numOr(els.feeFixed.value, 0), 0, MAX_FEE_FIXED);
+    const feePct = clamp(numOr(els.taxaExtraPct.value, 0), 0, MAX_FEE_PCT);
+    const feeFixed = clamp(numOr(els.custoExtraFixo.value, 0), 0, MAX_FEE_FIXED);
     const installments = state.method === 'credito'
       ? clampInt(state.installments, 1, MAX_INSTALLMENTS)
       : 1;
@@ -281,7 +265,7 @@
       feePct,
       feeFixed,
       installments,
-      passFee: els.passFee.checked
+      passFee: state.feeMode === 'client'
     };
   }
 
@@ -319,8 +303,10 @@
     );
 
     BASE_FIELDS.forEach((key) => {
-      $(CARD_ID[key]).classList.remove('is-calculated');
-      $(BADGE_ID[key]).hidden = true;
+      const card = $(CARD_ID[key]);
+      if (card) card.classList.remove('is-calculated');
+      const badge = $(BADGE_ID[key]);
+      if (badge) badge.hidden = true;
     });
 
     if (state.history.length < 2) {
@@ -329,7 +315,7 @@
       }
       state.calculated = null;
       els.calcModeHint.textContent =
-        state.history.length === 0 ? 'Preencha 2 campos' : 'Falta 1 campo';
+        state.history.length === 0 ? 'Preencha 2 campos base' : 'Falta 1 campo base';
       return null;
     }
 
@@ -342,8 +328,7 @@
     let precoCompra = parseDecimal(els.precoCompra.value);
 
     if (target === 'precoCompra') {
-      const factor = 1 - descCompra / 100;
-      precoCompra = Math.max(0, vendaBase * factor);
+      precoCompra = Math.max(0, vendaBase * (1 - descCompra / 100));
       els.precoCompra.value = formatNumberInput(precoCompra, 2);
       els.calcModeHint.textContent = 'Custo calculado';
     } else if (target === 'vendaBase') {
@@ -351,12 +336,12 @@
       if (factor <= 0) return null;
       vendaBase = precoCompra / factor;
       els.vendaBase.value = formatNumberInput(vendaBase, 2);
-      els.calcModeHint.textContent = 'Tabela calculada';
+      els.calcModeHint.textContent = 'Preço de venda calculado';
     } else {
       if (vendaBase <= 0) return null;
       descCompra = ((vendaBase - precoCompra) / vendaBase) * 100;
       els.descCompra.value = formatNumberInput(descCompra, 1);
-      els.calcModeHint.textContent = 'Desconto calculado';
+      els.calcModeHint.textContent = '% de compra calculado';
     }
 
     $(CARD_ID[target]).classList.add('is-calculated');
@@ -388,17 +373,9 @@
    * Financial model
    * ------------------------------------------------------------------ */
 
-  /**
-   * Fee charged by the card machine for a given negotiated amount.
-   * - passFee = true: gross-up, so the seller still receives `baseTotal`.
-   * - passFee = false: the fee is simply discounted from the seller.
-   */
   function cardFeeFor(baseTotal, pay) {
     if (baseTotal <= 0) return 0;
-
-    if (!pay.passFee) {
-      return baseTotal * (pay.feePct / 100) + pay.feeFixed;
-    }
+    if (!pay.passFee) return baseTotal * (pay.feePct / 100) + pay.feeFixed;
 
     const netFactor = 1 - pay.feePct / 100;
     if (netFactor <= 0.01) return 0;
@@ -406,10 +383,7 @@
   }
 
   function breakEvenUnit(costUnit, otherUnit, qty, pay, vendaBase) {
-    if (pay.passFee) {
-      // The fee is neutralised, so break-even is simply cost + extras.
-      return costUnit + otherUnit;
-    }
+    if (pay.passFee) return costUnit + otherUnit;
     const netFactor = 1 - pay.feePct / 100;
     if (netFactor <= 0.01) return vendaBase;
     return (costUnit + otherUnit + pay.feeFixed / qty) / netFactor;
@@ -421,36 +395,35 @@
     const productName = els.productName.value.trim();
 
     els.resultTitle.textContent = productName
-      ? productName + (qty > 1 ? ` · ${qty} un.` : '')
+      ? productName + (qty > 1 ? ` (${qty} un.)` : '')
       : qty > 1
-        ? `Análise da venda · ${qty} un.`
-        : 'Análise da venda';
+        ? `Análise Financeira (${qty} unidades)`
+        : 'Análise Financeira';
 
     if (!base || !(base.vendaBase > 0) || !Number.isFinite(base.precoCompra)) {
       state.current = null;
       renderEmptyState();
-      updatePassFeeHint(0, null);
+      updateFeeModeHint(0, readActivePayment());
       updateInstallmentsHint(readActivePayment(), null);
       return;
     }
 
     const { vendaBase, descCompra, precoCompra } = base;
     const pay = readActivePayment();
-    const otherUnit = Math.max(0, numOr(els.otherCostUnit.value, 0));
+    const otherUnit = Math.max(0, numOr(els.outroCustoUnit.value, 0));
 
     if (precoCompra > 0) {
       const baseMarkup = ((vendaBase - precoCompra) / precoCompra) * 100;
       els.markupInfo.textContent =
-        `Custo unitário · markup de tabela: ${baseMarkup >= 0 ? '+' : ''}${formatPct(baseMarkup, 1)}`;
+        `Custo unitário • Markup de tabela: ${baseMarkup >= 0 ? '+' : ''}${formatPct(baseMarkup, 1)}`;
     } else {
-      els.markupInfo.textContent = 'Valor unitário pago ao fornecedor.';
+      els.markupInfo.textContent = 'Valor unitário pago ao fornecedor / marca';
     }
 
     const catalogTotal = vendaBase * qty;
     const costTotal = precoCompra * qty;
     const otherTotal = otherUnit * qty;
 
-    // --- client discount (percentage <-> final unit price) ---
     let descClientePct;
     let negotiatedUnit;
 
@@ -480,7 +453,6 @@
     const marginPct = negotiatedTotal > 0 ? (profit / negotiatedTotal) * 100 : 0;
     const roiPct = invested > 0 ? (profit / invested) * 100 : 0;
     const discountTotal = catalogTotal - negotiatedTotal;
-    const discountPct = catalogTotal > 0 ? (discountTotal / catalogTotal) * 100 : 0;
     const clientSaving = catalogTotal - clientTotal;
     const clientSavingPct = catalogTotal > 0 ? (clientSaving / catalogTotal) * 100 : 0;
 
@@ -488,20 +460,18 @@
     const maxDiscountPct = Math.max(0, ((vendaBase - minUnit) / vendaBase) * 100);
     const installmentValue = pay.installments > 1 ? clientTotal / pay.installments : 0;
 
-    // --- slider & limit pill ---
     const sliderMax = clamp(
       Math.max(50, Math.ceil((Math.max(maxDiscountPct, descClientePct) + 10) / 5) * 5),
       0,
       99
     );
     els.sliderDescCliente.max = String(sliderMax);
-    els.sliderDescCliente.value = String(clamp(Number(els.sliderDescCliente.value) || 0, 0, sliderMax));
     els.sliderMaxLabel.textContent = sliderMax + '%';
-    els.sliderBreakEvenMark.textContent = `Sem prejuízo: ${formatPct(maxDiscountPct, 1)}`;
+    els.sliderBreakEvenMark.textContent = `Máx. s/ prejuízo: ${formatPct(maxDiscountPct, 1)}`;
 
     const overLimit = descClientePct > maxDiscountPct + 0.1;
-    els.maxDiscountPill.textContent = `Limite: ${formatPct(maxDiscountPct, 1)}`;
-    els.maxDiscountPill.className = 'pill ' + (overLimit ? 'is-danger' : 'pill-accent');
+    els.maxDiscountPill.textContent = `Limite s/ prejuízo: ${formatPct(maxDiscountPct, 1)}`;
+    els.maxDiscountPill.style.color = overLimit ? 'var(--danger)' : '';
 
     els.sliderDescCliente.value = String(clamp(descClientePct, 0, sliderMax));
     updateClientChips(descClientePct);
@@ -527,7 +497,6 @@
       marginPct,
       roiPct,
       discountTotal,
-      discountPct,
       clientSaving,
       clientSavingPct,
       minUnit,
@@ -539,182 +508,169 @@
 
     state.current = current;
 
-    updatePassFeeHint(fee, pay);
+    updateFeeModeHint(fee, pay);
     updateInstallmentsHint(pay, current);
     renderDashboard(current);
     renderScenarios(current);
-    updateMobileSummary(current);
   }
 
   /* ------------------------------------------------------------------ *
-   * Rendering
+   * Rendering — results dashboard (original layout)
    * ------------------------------------------------------------------ */
 
   function renderEmptyState() {
     els.healthBadge.className = 'health-badge health-neutral';
-    els.healthBadge.textContent = 'Aguardando';
+    els.healthBadge.textContent = 'Aguardando valores';
+    els.lossAlert.hidden = true;
+    els.kpiProfitCard.classList.remove('is-loss');
 
     els.kpiClientPrice.textContent = 'R$ 0,00';
-    els.heroSubtotal.textContent = 'R$ 0,00';
-    els.heroLines.hidden = true;
-    els.heroFeeRow.hidden = true;
-    els.heroReceivesRow.hidden = true;
-    els.heroInstallmentsRow.hidden = true;
-    els.lossAlert.hidden = true;
-
+    els.kpiClientSub.textContent = 'Tabela: R$ 0,00';
     els.kpiNetProfit.textContent = 'R$ 0,00';
-    els.kpiProfitSub.textContent = 'Margem líquida: 0,0%';
-    els.kpiReceiveSub.textContent = 'Sobre o custo: 0,0%';
-    els.legProfitLabel.textContent = 'Seu lucro líquido';
-    setHeroLoss(false);
+    els.kpiProfitSub.textContent = 'Margem real: 0,0%';
+    els.kpiTotalCost.textContent = 'R$ 0,00';
+    els.kpiCostSub.textContent = 'Desconto compra: 0,0%';
+    els.kpiClientSaving.textContent = 'R$ 0,00';
+    els.kpiSavingSub.textContent = '0,0% de desconto';
 
-    els.barCost.style.width = '60%';
+    els.breakdownRefTotal.textContent = 'Referência: R$ 0,00';
+    els.barCost.style.width = '50%';
     els.barFees.style.width = '0%';
-    els.barProfit.style.width = '40%';
-    els.barLoss.style.width = '0%';
+    els.barProfit.style.width = '50%';
     els.barProfit.classList.remove('is-loss');
-    els.dotProfit.classList.remove('is-loss');
+    els.barDiscount.style.width = '0%';
 
-    els.legCost.textContent = 'R$ 0,00';
+    els.legCost.textContent = 'R$ 0,00 (0%)';
     els.legFeesWrap.hidden = true;
-    els.legProfitName.textContent = 'Lucro';
-    els.legProfit.textContent = 'R$ 0,00';
+    els.legFees.textContent = 'R$ 0,00 (0%)';
+    els.legProfitLabel.textContent = 'Seu Lucro Líquido';
+    els.dotProfit.classList.remove('is-loss');
+    els.legProfit.textContent = 'R$ 0,00 (0%)';
+    els.legDiscount.textContent = 'R$ 0,00 (0%)';
 
-    els.savingNote.textContent = 'Preencha custo e preço de venda para ver o resultado.';
-
-    els.metricCost.textContent = 'R$ 0,00';
-    els.metricReceive.textContent = 'R$ 0,00';
-    els.metricSaving.textContent = 'R$ 0,00';
-    els.metricMarkup.textContent = '0,0%';
+    els.metricRoi.textContent = '0,0%';
     els.metricMargin.textContent = '0,0%';
-    els.metricBreakEven.textContent = '—';
-    els.metricCost.classList.remove('is-loss');
-
-    els.maxDiscountPill.textContent = 'Limite: —';
-    els.maxDiscountPill.className = 'pill pill-accent';
-    els.sliderBreakEvenMark.textContent = 'Sem prejuízo: —';
+    els.metricBreakEven.textContent = '0,0% (R$ 0,00)';
+    els.maxDiscountPill.textContent = 'Limite s/ prejuízo: —';
+    els.maxDiscountPill.style.color = '';
+    els.sliderBreakEvenMark.textContent = 'Ponto de equilíbrio';
 
     els.btnAddItem.disabled = true;
     els.btnCopyClient.disabled = true;
 
     els.scenariosBody.innerHTML =
-      '<tr><td colspan="5" class="empty-cell">Preencha os valores base para ver os cenários.</td></tr>';
-
-    updateMobileSummary(null);
-  }
-
-  function setHeroLoss(isLoss) {
-    const block = els.kpiNetProfit.closest('.hero-profit');
-    if (block) block.classList.toggle('is-loss', !!isLoss);
+      '<tr><td colspan="5" class="empty-table-cell">Preencha os valores base para visualizar os cenários de desconto.</td></tr>';
   }
 
   function renderDashboard(c) {
     const isLoss = c.profit < -0.005;
     const lowMargin = !isLoss && c.marginPct < 10;
+    const absorbedFee = c.pay.passFee ? 0 : c.fee;
 
     if (isLoss) {
       els.healthBadge.className = 'health-badge health-loss';
-      els.healthBadge.textContent = 'Prejuízo';
+      els.healthBadge.textContent = 'Prejuízo na Operação';
       els.lossAlert.hidden = false;
       els.lossAlertText.textContent =
-        `Com ${formatPct(c.descClientePct, 1)} de desconto você perde ${formatBRL(Math.abs(c.profit))}. ` +
-        `Preço mínimo sem prejuízo: ${formatBRL(c.minUnit)}/un.`;
+        `Atenção: com ${formatPct(c.descClientePct, 1)} de desconto, você perde ${formatBRL(Math.abs(c.profit))}. ` +
+        `O preço mínimo sem prejuízo é ${formatBRL(c.minUnit)}/un (${formatPct(c.maxDiscountPct, 1)} máx.).`;
+      els.kpiProfitCard.classList.add('is-loss');
     } else if (lowMargin) {
       els.healthBadge.className = 'health-badge health-warn';
-      els.healthBadge.textContent = 'Margem baixa';
+      els.healthBadge.textContent = 'Margem Apertada';
       els.lossAlert.hidden = true;
+      els.kpiProfitCard.classList.remove('is-loss');
     } else {
       els.healthBadge.className = 'health-badge health-good';
-      els.healthBadge.textContent = 'Lucro saudável';
+      els.healthBadge.textContent = 'Lucro Saudável';
       els.lossAlert.hidden = true;
+      els.kpiProfitCard.classList.remove('is-loss');
     }
 
-    // client total
+    // Client total
     els.kpiClientPrice.textContent = formatBRL(c.clientTotal);
-    els.heroSubtotal.textContent = formatBRL(c.negotiatedTotal);
-    els.heroSubtotalRow.hidden = c.fee <= 0.005;
-    els.heroLines.hidden = c.fee <= 0.005 && c.installments <= 1;
 
-    if (c.fee > 0.005) {
-      els.heroFeeRow.hidden = false;
-      els.heroFeeRow.classList.toggle('is-absorbed', !c.pay.passFee);
-      const feeLabel = c.pay.feePct > 0.0001
-        ? `(${formatPct(c.pay.feePct, 2)})`
-        : '(taxa fixa)';
-      els.heroFeeLabel.textContent = c.pay.passFee
-        ? `Acréscimo da maquininha ${feeLabel}`
-        : `Maquininha por sua conta ${feeLabel}`;
-      els.heroFee.textContent = (c.pay.passFee ? '+ ' : '− ') + formatBRL(c.fee);
-
-      els.heroReceivesRow.hidden = false;
-      els.heroReceives.textContent = formatBRL(c.received);
-    } else {
-      els.heroFeeRow.hidden = true;
-      els.heroReceivesRow.hidden = true;
-    }
-
+    const clientSub = [];
     if (c.installments > 1) {
-      els.heroInstallmentsRow.hidden = false;
-      els.heroInstallments.textContent = `${c.installments}x de ${formatBRL(c.installmentValue)}`;
-    } else {
-      els.heroInstallmentsRow.hidden = true;
+      clientSub.push(`${c.installments}x de ${formatBRL(c.clientTotal / c.installments)}`);
     }
+    if (c.fee > 0.005) {
+      clientSub.push(
+        c.pay.passFee
+          ? `taxa ${formatBRL(c.fee)} inclusa`
+          : `taxa ${formatBRL(c.fee)} por sua conta`
+      );
+    }
+    if (c.qty > 1) clientSub.push(`${c.qty} un.`);
+    if (clientSub.length === 0) {
+      clientSub.push(c.qty > 1 ? `Tabela: ${formatBRL(c.catalogTotal)}` : `Tabela: ${formatBRL(c.vendaBase)}`);
+    }
+    els.kpiClientSub.textContent = clientSub.join(' • ');
 
-    // profit block
-    els.kpiNetProfit.textContent = (isLoss ? '− ' : '') + formatBRL(Math.abs(c.profit));
-    els.kpiProfitSub.textContent = `Margem líquida: ${formatPct(c.marginPct, 1)}`;
-    els.kpiReceiveSub.textContent = `Sobre o custo: ${c.roiPct >= 0 ? '+' : ''}${formatPct(c.roiPct, 1)}`;
-    els.legProfitLabel.textContent = isLoss ? 'Prejuízo nesta venda' : 'Seu lucro líquido';
-    if (!isLoss && c.profit < 0.005) els.legProfitLabel.textContent = 'Empatado';
-    setHeroLoss(isLoss);
+    // Profit
+    els.kpiNetProfit.textContent =
+      (isLoss ? '− ' : '') + formatBRL(Math.abs(c.profit));
+    els.kpiProfitSub.textContent =
+      c.qty > 1
+        ? `${formatBRL(c.profit / c.qty)}/un • Margem: ${formatPct(c.marginPct, 1)}`
+        : `Margem líquida real: ${formatPct(c.marginPct, 1)}`;
 
-    // composition bar
-    let denominator = c.clientTotal;
+    // Total cost
+    els.kpiTotalCost.textContent = formatBRL(c.invested + absorbedFee);
+    const costExtras = [];
+    if (c.otherTotal > 0.005) costExtras.push(`Extras ${formatBRL(c.otherTotal)}`);
+    if (absorbedFee > 0.005) costExtras.push(`Taxa ${formatBRL(absorbedFee)}`);
+    els.kpiCostSub.textContent = costExtras.length
+      ? `Compra ${formatBRL(c.costTotal)} + ${costExtras.join(' + ')}`
+      : `Desconto compra: ${formatPct(c.descCompra, 1)}`;
+
+    // Client saving vs. table
+    const saving = Math.max(0, c.clientSaving);
+    els.kpiClientSaving.textContent = formatBRL(saving);
+    els.kpiSavingSub.textContent =
+      c.clientSavingPct >= -0.05
+        ? `${formatPct(Math.max(0, c.clientSavingPct), 1)} de desconto`
+        : `Acima da tabela (+${formatPct(Math.abs(c.clientSavingPct), 1)})`;
+
+    // Composition bar
     const costPart = c.costTotal + c.otherTotal;
-    const feePart = c.fee > 0.005 ? c.fee : 0;
-    let profitPart = Math.max(0, c.profit);
-    let lossPart = c.profit < -0.005 ? Math.abs(c.profit) : 0;
+    const feePart = c.fee;
+    const profitPart = c.profit;
+    const discountPart = Math.max(0, c.catalogTotal - c.clientTotal);
 
-    if (lossPart > 0) {
-      denominator = costPart + feePart + lossPart;
+    let denominator;
+    if (profitPart < -0.005) {
+      denominator = costPart + feePart + Math.abs(profitPart);
+    } else {
+      denominator = Math.max(c.catalogTotal, c.clientTotal, costPart + feePart, 0.01);
     }
-    if (denominator <= 0) denominator = 1;
 
-    els.barCost.style.width = `${((costPart / denominator) * 100).toFixed(2)}%`;
-    els.barFees.style.width = `${((feePart / denominator) * 100).toFixed(2)}%`;
-    els.barProfit.style.width = `${((profitPart / denominator) * 100).toFixed(2)}%`;
-    els.barLoss.style.width = `${((lossPart / denominator) * 100).toFixed(2)}%`;
+    const share = (value) => (denominator > 0 ? (value / denominator) * 100 : 0);
+    const shownDiscount = profitPart < -0.005 ? 0 : discountPart;
+
+    els.breakdownRefTotal.textContent = `Referência: ${formatBRL(denominator)}`;
+    els.barCost.style.width = `${share(costPart).toFixed(2)}%`;
+    els.barFees.style.width = `${share(feePart).toFixed(2)}%`;
+    els.barProfit.style.width = `${share(profitPart < 0 ? Math.abs(profitPart) : profitPart).toFixed(2)}%`;
+    els.barDiscount.style.width = `${share(shownDiscount).toFixed(2)}%`;
+
     els.barProfit.classList.toggle('is-loss', isLoss);
     els.dotProfit.classList.toggle('is-loss', isLoss);
 
-    els.legCost.textContent = formatBRL(costPart);
+    els.legCost.textContent = `${formatBRL(costPart)} (${formatPct(share(costPart), 0)})`;
     els.legFeesWrap.hidden = feePart <= 0.005;
-    els.legFees.textContent = formatBRL(feePart);
-    els.legProfitName.textContent = isLoss ? 'Prejuízo' : 'Lucro';
-    els.legProfit.textContent = formatBRL(Math.abs(c.profit));
+    els.legFees.textContent = `${formatBRL(feePart)} (${formatPct(share(feePart), 0)})`;
+    els.legProfitLabel.textContent = isLoss ? 'Prejuízo na Venda' : 'Seu Lucro Líquido';
+    els.legProfit.textContent =
+      `${isLoss ? '−' : ''}${formatBRL(Math.abs(profitPart))} (${formatPct(share(Math.abs(profitPart)), 0)})`;
+    els.legDiscount.textContent =
+      `${formatBRL(shownDiscount)} (${formatPct(share(shownDiscount), 1)})`;
 
-    if (c.clientSaving > 0.005) {
-      els.savingNote.textContent =
-        `Economia do cliente: ${formatBRL(c.clientSaving)} (${formatPct(c.clientSavingPct, 1)} abaixo da tabela)`;
-    } else if (c.clientSaving < -0.005) {
-      els.savingNote.textContent =
-        `Cliente paga ${formatBRL(Math.abs(c.clientSaving))} acima do preço de tabela — taxa incluída.`;
-    } else {
-      els.savingNote.textContent = 'Cliente paga exatamente o preço de tabela.';
-    }
-
-    // metrics
-    const absorbedFee = c.pay.passFee ? 0 : c.fee;
-    els.metricCost.textContent = formatBRL(c.invested + absorbedFee);
-    els.metricCost.classList.toggle('is-loss', isLoss);
-    els.metricReceive.textContent = formatBRL(c.received);
-    els.metricSaving.textContent = c.clientSaving > 0.005 ? formatBRL(c.clientSaving) : '—';
-    els.metricMarkup.textContent = c.invested > 0 ? formatPct(c.roiPct, 1) : '—';
+    // Metrics
+    els.metricRoi.textContent = `${c.roiPct >= 0 ? '+' : ''}${formatPct(c.roiPct, 1)}`;
     els.metricMargin.textContent = formatPct(c.marginPct, 1);
-    els.metricMargin.classList.toggle('is-loss', isLoss);
-    els.metricBreakEven.textContent = formatBRL(c.minUnit);
-    els.metricBreakEven.title =
-      `Desconto máximo sem prejuízo: ${formatPct(c.maxDiscountPct, 1)}`;
+    els.metricBreakEven.textContent =
+      `${formatPct(c.maxDiscountPct, 1)} (${formatBRL(c.minUnit)})`;
 
     els.btnAddItem.disabled = false;
     els.btnCopyClient.disabled = false;
@@ -731,14 +687,15 @@
         const profit =
           negotiated - c.costTotal - c.otherTotal - (c.pay.passFee ? 0 : fee);
         const margin = negotiated > 0 ? (profit / negotiated) * 100 : 0;
+        const saved = Math.max(0, c.catalogTotal - clientPays);
         const isActive = Math.abs(c.descClientePct - pct) < 0.25;
         const isLoss = profit < -0.005;
 
         return `
           <tr data-scenario-pct="${pct}" class="${isActive ? 'active-row' : ''} ${isLoss ? 'loss-row' : ''}">
             <td><strong>${pct}%</strong></td>
-            <td><strong>${formatBRL(clientPays)}</strong></td>
-            <td class="col-fee">${fee > 0.005 ? (c.pay.passFee ? '+' : '−') + formatBRL(fee) : '—'}</td>
+            <td>${formatBRL(clientPays)}</td>
+            <td>${saved > 0.005 ? formatBRL(saved) : '—'}</td>
             <td class="col-profit">${isLoss ? '− ' : ''}${formatBRL(Math.abs(profit))}</td>
             <td>${formatPct(margin, 1)}</td>
           </tr>
@@ -747,33 +704,43 @@
       .join('');
   }
 
-  function updatePassFeeHint(fee, pay) {
-    const card = els.passFee.closest('.switch-card');
-    if (card) card.classList.toggle('is-off', !els.passFee.checked);
+  function updateFeeModeHint(fee, pay) {
+    document.querySelectorAll('[data-fee-mode]').forEach((btn) => {
+      const active = btn.getAttribute('data-fee-mode') === state.feeMode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+
+    els.feeModePill.textContent = pay && pay.passFee
+      ? 'Cliente paga a taxa'
+      : 'Você absorve a taxa';
 
     if (!pay || fee <= 0.005) {
-      els.passFeeHint.textContent = els.passFee.checked
-        ? 'Sem taxa nesta forma de pagamento.'
-        : 'Você recebe o valor combinado, sem desconto de taxa.';
+      els.feeModeHint.textContent = 'Sem taxa nesta forma de pagamento.';
       return;
     }
 
-    if (pay.passFee) {
-      els.passFeeHint.textContent =
-        `O cliente paga ${formatBRL(fee)} a mais e você recebe o valor combinado.`;
-    } else {
-      els.passFeeHint.textContent =
-        `Você absorve ${formatBRL(fee)} de taxa — sai do seu lucro.`;
-    }
+    els.feeModeHint.textContent = pay.passFee
+      ? `O cliente paga ${formatBRL(fee)} a mais e você recebe o valor combinado.`
+      : `Você absorve ${formatBRL(fee)} de taxa — sai do seu lucro.`;
   }
 
-  function updateMobileSummary(c) {
-    if (!c) {
-      els.mobileSummary.hidden = true;
+  function updateInstallmentsHint(pay, calc) {
+    if (!els.installmentsHint) return;
+    if (!pay || state.method !== 'credito') {
+      els.installmentsHint.textContent = '';
       return;
     }
-    els.mobileSummary.hidden = false;
-    els.mobileSummaryValue.textContent = formatBRL(c.clientTotal);
+
+    const feeText = `taxa da maquininha: ${formatPct(pay.feePct, 2)}`;
+    if (pay.installments <= 1) {
+      els.installmentsHint.textContent = `À vista no crédito • ${feeText}.`;
+    } else if (calc && calc.clientTotal > 0) {
+      els.installmentsHint.textContent =
+        `${pay.installments}x de ${formatBRL(calc.clientTotal / pay.installments)} • ${feeText}.`;
+    } else {
+      els.installmentsHint.textContent = `${pay.installments} parcelas • ${feeText}.`;
+    }
   }
 
   /* ------------------------------------------------------------------ *
@@ -789,7 +756,7 @@
     const fee = method === 'credito'
       ? suggestedCreditFee(state.installments)
       : PAY_METHODS[method].fee;
-    els.feePct.value = fee ? formatNumberInput(fee, 2) : '';
+    els.taxaExtraPct.value = fee ? formatNumberInput(fee, 2) : '';
 
     syncPaymentUI();
     recalculate();
@@ -799,8 +766,15 @@
   function selectInstallments(count) {
     state.method = 'credito';
     state.installments = clampInt(count, 1, MAX_INSTALLMENTS);
-    els.feePct.value = formatNumberInput(suggestedCreditFee(state.installments), 2);
+    els.taxaExtraPct.value = formatNumberInput(suggestedCreditFee(state.installments), 2);
 
+    syncPaymentUI();
+    recalculate();
+    scheduleSave();
+  }
+
+  function selectFeeMode(mode) {
+    state.feeMode = mode === 'seller' ? 'seller' : 'client';
     syncPaymentUI();
     recalculate();
     scheduleSave();
@@ -812,7 +786,7 @@
       { length: MAX_INSTALLMENTS },
       (_, index) => {
         const n = index + 1;
-        return `<button type="button" class="chip chip-installment" data-installments="${n}" aria-pressed="false">${n}x</button>`;
+        return `<button type="button" class="chip" data-installments="${n}" aria-pressed="false">${n}x</button>`;
       }
     ).join('');
   }
@@ -827,32 +801,21 @@
     });
   }
 
-  function updateInstallmentsHint(pay, calc) {
-    if (!els.installmentsHint) return;
-    if (!pay || state.method !== 'credito') {
-      els.installmentsHint.textContent = '';
-      return;
-    }
-
-    const feeText = `taxa da maquininha: ${formatPct(pay.feePct, 2)}`;
-    if (pay.installments <= 1) {
-      els.installmentsHint.textContent = `À vista no crédito · ${feeText}.`;
-    } else if (calc && calc.clientTotal > 0) {
-      els.installmentsHint.textContent =
-        `${pay.installments}x de ${formatBRL(calc.clientTotal / pay.installments)} · ${feeText}.`;
-    } else {
-      els.installmentsHint.textContent = `${pay.installments} parcelas · ${feeText}.`;
-    }
-  }
-
   function syncPaymentUI() {
     document.querySelectorAll('[data-method]').forEach((btn) => {
-      const isActive = btn.getAttribute('data-method') === state.method;
-      btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-pressed', String(isActive));
+      const active = btn.getAttribute('data-method') === state.method;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
     });
-    els.installmentsField.hidden = state.method !== 'credito';
+
+    els.installmentsGroup.hidden = state.method !== 'credito';
     updateInstallmentChips();
+
+    document.querySelectorAll('[data-fee-mode]').forEach((btn) => {
+      const active = btn.getAttribute('data-fee-mode') === state.feeMode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
   }
 
   /* ------------------------------------------------------------------ *
@@ -861,8 +824,14 @@
 
   function loadItems() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORE.order) || '[]');
-      return Array.isArray(parsed) ? parsed : [];
+      const stored = localStorage.getItem(STORE.order);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+      const legacy = localStorage.getItem(STORE.legacyOrder);
+      const parsedLegacy = legacy ? JSON.parse(legacy) : [];
+      return Array.isArray(parsedLegacy) ? parsedLegacy : [];
     } catch (_) {
       return [];
     }
@@ -871,64 +840,48 @@
   function saveItems() {
     try {
       localStorage.setItem(STORE.order, JSON.stringify(state.items));
-    } catch (_) {
-      /* storage unavailable */
-    }
+    } catch (_) {}
   }
 
   function renderOrder() {
-    const count = state.items.length;
-    const hasItems = count > 0;
-    const totalQty = state.items.reduce((sum, item) => sum + item.qty, 0);
-
-    els.orderSection.classList.toggle('has-items', hasItems);
-    els.orderEmpty.hidden = hasItems;
-    els.orderTableWrap.hidden = !hasItems;
-    els.orderCount.textContent = String(count);
-    els.tabOrderBadge.hidden = !hasItems;
-    els.tabOrderBadge.textContent = String(count);
-
-    if (!hasItems) {
-      els.orderBody.innerHTML = '';
-      els.orderTotalQty.textContent = '0';
-      els.orderTotalClient.textContent = formatBRL(0);
-      els.orderTotalProfit.textContent = formatBRL(0);
-      els.orderFeeNote.hidden = true;
+    if (state.items.length === 0) {
+      els.orderSection.hidden = true;
       return;
     }
 
-    let totalClient = 0;
+    els.orderSection.hidden = false;
+    els.orderCount.textContent = String(state.items.length);
+
+    let totalQty = 0;
+    let totalCost = 0;
+    let totalSaved = 0;
+    let totalRevenue = 0;
     let totalProfit = 0;
-    let totalFee = 0;
 
     els.orderBody.innerHTML = state.items
       .map((item, index) => {
-        totalClient += item.clientTotal;
-        totalProfit += item.profit;
-        if (item.passFee) totalFee += item.fee;
+        totalQty += item.qty;
+        totalCost += item.totalCost;
+        totalSaved += item.totalSaved;
+        totalRevenue += item.totalRevenue;
+        totalProfit += item.totalProfit;
 
-        const loss = item.profit < -0.005;
-        const sub = [
-          `${item.qty}× ${formatBRL(item.unitPrice)}`,
-          item.descPct > 0.01 ? `${formatPct(item.descPct, 1)} off` : null,
-          item.installments > 1
-            ? `${item.installments}x de ${formatBRL(item.clientTotal / item.installments)}`
-            : null
-        ].filter(Boolean).join(' · ');
+        const loss = item.totalProfit < 0;
+        const installments = item.installments || 1;
+        const subline = installments > 1
+          ? `<span class="order-sub">${installments}x de ${formatBRL(item.totalRevenue / installments)}</span>`
+          : '';
 
         return `
           <tr>
+            <td><strong>${escapeHtml(item.name)}</strong>${subline}</td>
+            <td>${item.qty}</td>
+            <td>${formatBRL(item.totalCost)}</td>
+            <td>${item.descClientePct > 0 ? `${formatPct(item.descClientePct, 1)} (${formatBRL(item.totalSaved)})` : 'Sem desc.'}</td>
+            <td class="highlight-client">${formatBRL(item.totalRevenue)}</td>
+            <td class="${loss ? 'col-loss' : 'col-profit'}">${loss ? '− ' : ''}${formatBRL(Math.abs(item.totalProfit))}</td>
             <td>
-              <strong>${escapeHtml(item.name)}</strong>
-              <span class="order-sub">${sub}</span>
-            </td>
-            <td class="col-qty">${item.qty}</td>
-            <td class="cell-client">${formatBRL(item.clientTotal)}</td>
-            <td class="cell-profit ${loss ? 'is-loss' : ''}">${loss ? '− ' : ''}${formatBRL(Math.abs(item.profit))}</td>
-            <td>
-              <button type="button" class="remove-btn" data-remove-index="${index}" aria-label="Remover ${escapeHtml(item.name)}">
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-              </button>
+              <button type="button" class="btn-remove-row" data-remove-idx="${index}" title="Remover item" aria-label="Remover item">✕</button>
             </td>
           </tr>
         `;
@@ -936,16 +889,11 @@
       .join('');
 
     els.orderTotalQty.textContent = String(totalQty);
-    els.orderTotalClient.textContent = formatBRL(totalClient);
-    els.orderTotalProfit.textContent = (totalProfit < 0 ? '− ' : '') + formatBRL(Math.abs(totalProfit));
-    els.orderTotalProfit.classList.toggle('is-loss', totalProfit < 0);
-
-    if (totalFee > 0.005) {
-      els.orderFeeNote.hidden = false;
-      els.orderFeeNote.textContent = `Taxa da maquininha repassada ao cliente, já incluída nos valores: ${formatBRL(totalFee)}.`;
-    } else {
-      els.orderFeeNote.hidden = true;
-    }
+    els.orderTotalCost.textContent = formatBRL(totalCost);
+    els.orderTotalSaved.textContent = formatBRL(totalSaved);
+    els.orderTotalRevenue.textContent = formatBRL(totalRevenue);
+    els.orderTotalProfit.textContent =
+      (totalProfit < 0 ? '− ' : '') + formatBRL(Math.abs(totalProfit));
   }
 
   function addCurrentToOrder() {
@@ -953,29 +901,28 @@
     if (!c) return;
 
     const name = c.productNameRaw || `Item #${state.items.length + 1}`;
+    const absorbedFee = c.pay.passFee ? 0 : c.fee;
 
     state.items.push({
       name,
       qty: c.qty,
-      unitPrice: c.negotiatedUnit,
-      descPct: c.descClientePct,
+      descClientePct: c.descClientePct,
+      installments: c.installments,
       fee: c.fee,
       passFee: c.pay.passFee,
-      installments: c.installments,
-      clientTotal: c.clientTotal,
-      catalogTotal: c.catalogTotal,
-      saving: Math.max(0, c.discountTotal),
-      cost: c.invested,
-      profit: c.profit
+      totalCost: c.invested + absorbedFee,
+      totalSaved: Math.max(0, c.clientSaving),
+      totalRevenue: c.clientTotal,
+      totalProfit: c.profit
     });
 
     saveItems();
     renderOrder();
-    showToast(`"${name}" adicionado ao pedido.`);
+    showToast(`"${name}" adicionado à simulação de pedido.`);
   }
 
   /* ------------------------------------------------------------------ *
-   * Clipboard
+   * Clipboard / quotes
    * ------------------------------------------------------------------ */
 
   function copyText(text, successMessage) {
@@ -1009,37 +956,30 @@
     const c = state.current;
     if (!c) return '';
 
-    const lines = ['ORÇAMENTO DE VENDA', ''];
-
+    const lines = [];
     if (c.productNameRaw) {
-      lines.push(`${c.productNameRaw}${c.qty > 1 ? ` (${c.qty} un.)` : ''}`);
+      lines.push(`Produto: ${c.productNameRaw}${c.qty > 1 ? ` (${c.qty} un.)` : ''}`);
     } else if (c.qty > 1) {
-      lines.push(`${c.qty} unidades`);
-    } else {
-      lines.push('Produto');
+      lines.push(`Quantidade: ${c.qty} unidades`);
     }
 
-    lines.push('------------------------------');
-    lines.push(`Subtotal: ${formatBRL(c.negotiatedTotal)}`);
-
     if (c.descClientePct > 0.01) {
-      lines.push(`Desconto (${formatPct(c.descClientePct, 1)}): −${formatBRL(c.discountTotal)}`);
-      lines.push(`De ${formatBRL(c.catalogTotal)} por ${formatBRL(c.negotiatedTotal)}`);
+      lines.push(`Valor de tabela: ${formatBRL(c.catalogTotal)}`);
+      lines.push(`Desconto especial (${formatPct(c.descClientePct, 1)}): -${formatBRL(c.discountTotal)}`);
     }
 
     if (c.fee > 0.005 && c.pay.passFee) {
-      const feeLabel = c.pay.feePct > 0 ? ` (${formatPct(c.pay.feePct, 2)})` : '';
+      const feeLabel = c.pay.feePct > 0.0001 ? ` (${formatPct(c.pay.feePct, 2)})` : '';
       lines.push(`Acréscimo da maquininha${feeLabel}: +${formatBRL(c.fee)}`);
     }
 
-    lines.push(`TOTAL: ${formatBRL(c.clientTotal)}`);
+    lines.push(`Valor final: ${formatBRL(c.clientTotal)}`);
 
     if (c.installments > 1) {
-      lines.push(`ou ${c.installments}x de ${formatBRL(c.installmentValue)} no cartão`);
+      lines.push(`ou ${c.installments}x de ${formatBRL(c.clientTotal / c.installments)} no cartão`);
     }
 
     if (c.fee > 0.005 && c.pay.passFee) {
-      lines.push('');
       lines.push('Taxa da maquininha já incluída no total.');
     }
 
@@ -1049,40 +989,32 @@
   function buildOrderQuote() {
     if (state.items.length === 0) return '';
 
-    let totalClient = 0;
-    let totalSaving = 0;
+    let totalRevenue = 0;
+    let totalSaved = 0;
     let totalFee = 0;
 
-    const lines = ['ORÇAMENTO DE PEDIDO', '------------------------------'];
-
+    const lines = ['ORÇAMENTO DE PEDIDO', '------------------------'];
     state.items.forEach((item) => {
-      totalClient += item.clientTotal;
-      if (item.passFee) totalFee += item.fee;
-      totalSaving += Number.isFinite(item.saving) ? item.saving : 0;
+      totalRevenue += item.totalRevenue;
+      totalSaved += item.totalSaved;
+      if (item.passFee) totalFee += item.fee || 0;
 
-      const qtyLabel = item.qty > 1 ? ` (${item.qty} un.)` : '';
-      lines.push(`• ${item.name}${qtyLabel} — ${formatBRL(item.clientTotal)}`);
-
-      if (item.descPct > 0.01) {
-        lines.push(`   ${formatPct(item.descPct, 1)} de desconto aplicado`);
-      }
+      lines.push(`• ${item.qty}x ${item.name}: ${formatBRL(item.totalRevenue)}`);
     });
 
-    lines.push('------------------------------');
-    if (totalSaving > 0.01) {
-      lines.push(`Economia total: ${formatBRL(totalSaving)}`);
-    }
+    lines.push('------------------------');
     if (totalFee > 0.01) {
       lines.push(`Taxa da maquininha incluída: ${formatBRL(totalFee)}`);
     }
-    lines.push(`TOTAL A PAGAR: ${formatBRL(totalClient)}`);
+    if (totalSaved > 0.01) {
+      lines.push(`Economia total aplicada: ${formatBRL(totalSaved)}`);
+    }
+    lines.push(`TOTAL A PAGAR: ${formatBRL(totalRevenue)}`);
 
-    const installmentsList = state.items.map((item) => item.installments || 1);
-    const uniformInstallments = installmentsList.every((n) => n === installmentsList[0])
-      ? installmentsList[0]
-      : 0;
-    if (uniformInstallments > 1) {
-      lines.push(`ou ${uniformInstallments}x de ${formatBRL(totalClient / uniformInstallments)} no cartão`);
+    const list = state.items.map((item) => item.installments || 1);
+    const sameInstallments = list.every((n) => n === list[0]) ? list[0] : 0;
+    if (sameInstallments > 1) {
+      lines.push(`ou ${sameInstallments}x de ${formatBRL(totalRevenue / sameInstallments)} no cartão`);
     }
 
     return lines.join('\n');
@@ -1093,24 +1025,24 @@
    * ------------------------------------------------------------------ */
 
   function loadExample() {
-    els.productName.value = 'Kit hidratante + body splash';
+    els.productName.value = 'Kit Hidratante + Body Splash';
     els.quantity.value = '1';
     els.vendaBase.value = '150,00';
     els.descCompra.value = '30';
     els.precoCompra.value = '';
     els.descCliente.value = '10';
     els.precoFinalCliente.value = '';
-    els.otherCostUnit.value = '';
+    els.outroCustoUnit.value = '';
     els.sliderDescCliente.value = '0';
 
     state.history = ['vendaBase', 'descCompra'];
     state.calculated = null;
     state.clientMode = 'pct';
-    state.method = 'credito';
-    state.installments = 3;
-    els.feePct.value = formatNumberInput(suggestedCreditFee(3), 2);
-    els.feeFixed.value = '';
-    els.passFee.checked = true;
+    state.method = 'pix';
+    state.installments = 1;
+    state.feeMode = 'client';
+    els.taxaExtraPct.value = '';
+    els.custoExtraFixo.value = '';
 
     syncPaymentUI();
     updateBuyChips();
@@ -1126,17 +1058,17 @@
     els.descCliente.value = '0';
     els.precoFinalCliente.value = '';
     els.sliderDescCliente.value = '0';
-    els.otherCostUnit.value = '';
-    els.feeFixed.value = '';
-    els.feePct.value = '';
-    els.passFee.checked = true;
-    els.calcModeHint.textContent = 'Preencha 2 campos';
+    els.taxaExtraPct.value = '';
+    els.custoExtraFixo.value = '';
+    els.outroCustoUnit.value = '';
+    els.calcModeHint.textContent = 'Preencha 2 campos base';
 
     state.history = [];
     state.calculated = null;
     state.clientMode = 'pct';
     state.method = 'pix';
     state.installments = 1;
+    state.feeMode = 'client';
 
     try {
       localStorage.removeItem(STORE.form);
@@ -1164,16 +1096,16 @@
           precoCompra: els.precoCompra.value,
           descCliente: els.descCliente.value,
           precoFinalCliente: els.precoFinalCliente.value,
-          feePct: els.feePct.value,
-          feeFixed: els.feeFixed.value,
-          otherCostUnit: els.otherCostUnit.value
+          taxaExtraPct: els.taxaExtraPct.value,
+          custoExtraFixo: els.custoExtraFixo.value,
+          outroCustoUnit: els.outroCustoUnit.value
         },
         history: state.history,
         calculated: state.calculated,
         clientMode: state.clientMode,
         method: state.method,
         installments: state.installments,
-        passFee: els.passFee.checked
+        feeMode: state.feeMode
       };
       localStorage.setItem(STORE.form, JSON.stringify(payload));
     } catch (_) {}
@@ -1205,9 +1137,9 @@
     assign(els.precoCompra, f.precoCompra);
     assign(els.descCliente, f.descCliente);
     assign(els.precoFinalCliente, f.precoFinalCliente);
-    assign(els.feePct, f.feePct);
-    assign(els.feeFixed, f.feeFixed);
-    assign(els.otherCostUnit, f.otherCostUnit);
+    assign(els.taxaExtraPct, f.taxaExtraPct);
+    assign(els.custoExtraFixo, f.custoExtraFixo);
+    assign(els.outroCustoUnit, f.outroCustoUnit || f.otherCostUnit);
 
     if (['pix', 'debito', 'credito', 'parcelado'].includes(saved.method)) {
       state.method = saved.method === 'parcelado' ? 'credito' : saved.method;
@@ -1220,9 +1152,13 @@
     );
     state.installments = state.method === 'credito' ? savedInstallments : 1;
 
-    state.clientMode = saved.clientMode === 'finalPrice' ? 'finalPrice' : 'pct';
-    els.passFee.checked = saved.passFee !== false;
+    if (saved.feeMode === 'client' || saved.feeMode === 'seller') {
+      state.feeMode = saved.feeMode;
+    } else if (saved.passFee === false) {
+      state.feeMode = 'seller';
+    }
 
+    state.clientMode = saved.clientMode === 'finalPrice' ? 'finalPrice' : 'pct';
     state.history = Array.isArray(saved.history)
       ? saved.history.filter((k) => BASE_FIELDS.includes(k)).slice(-2)
       : [];
@@ -1257,7 +1193,7 @@
     if (els.iconMoon) els.iconMoon.hidden = isDark;
     if (els.iconSun) els.iconSun.hidden = !isDark;
     if (els.metaThemeColor) {
-      els.metaThemeColor.setAttribute('content', isDark ? '#0F1622' : '#FFFFFF');
+      els.metaThemeColor.setAttribute('content', isDark ? '#0B1120' : '#FFFFFF');
     }
     if (persist) {
       try {
@@ -1271,8 +1207,7 @@
     try {
       saved = localStorage.getItem(STORE.theme);
     } catch (_) {}
-    const theme = saved || (prefersDark && prefersDark.matches ? 'dark' : 'light');
-    applyTheme(theme, false);
+    applyTheme(saved || (prefersDark && prefersDark.matches ? 'dark' : 'light'), false);
   }
 
   function toggleTheme() {
@@ -1281,93 +1216,46 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * Mobile tabs
-   * ------------------------------------------------------------------ */
-
-  function setView(view, shouldScroll) {
-    const allowed = ['calc', 'result', 'order'];
-    const target = allowed.includes(view) ? view : 'calc';
-    document.body.setAttribute('data-view', target);
-
-    document.querySelectorAll('.tab[data-view]').forEach((tab) => {
-      const active = tab.getAttribute('data-view') === target;
-      tab.classList.toggle('active', active);
-      if (active) {
-        tab.setAttribute('aria-current', 'page');
-      } else {
-        tab.removeAttribute('aria-current');
-      }
-    });
-
-    if (shouldScroll !== false) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  /* ------------------------------------------------------------------ *
    * PWA: install + service worker
    * ------------------------------------------------------------------ */
 
-  const isStandalone = () => {
-    return (
-      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-      window.navigator.standalone === true
-    );
-  };
-
-  const isIOS = () => {
-    const ua = window.navigator.userAgent || '';
-    return (
-      /iPad|iPhone|iPod/.test(ua) ||
-      (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1)
-    );
-  };
+  const isStandalone = () =>
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone === true;
 
   function installSheetContent() {
     const ua = window.navigator.userAgent || '';
     const isAndroid = /Android/i.test(ua);
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
 
-    if (isIOS()) {
+    if (isIOS) {
       return `
         <ol>
           <li>Abra o Margix no <strong>Safari</strong>.</li>
           <li>Toque no botão <strong>Compartilhar</strong> (quadrado com a seta para cima).</li>
           <li>Escolha <strong>Adicionar à Tela de Início</strong>.</li>
-          <li>Toque em <strong>Adicionar</strong>. Pronto: o Margix vira um app no seu celular.</li>
+          <li>Toque em <strong>Adicionar</strong>.</li>
         </ol>
         <p class="sheet-note">No iPhone, a instalação precisa ser feita pelo Safari. O app abre em tela cheia e funciona offline.</p>
       `;
     }
-
     if (isAndroid) {
       return `
         <ol>
-          <li>Toque no menu do navegador (<strong>⋮</strong> no canto superior).</li>
-          <li>Escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
-          <li>Confirme. O Margix abre em tela cheia e funciona offline.</li>
-        </ol>
-        <p class="sheet-note">No Chrome, também aparece um botão de instalação na barra de endereço.</p>
-      `;
-    }
-
-    if (isMobile) {
-      return `
-        <ol>
-          <li>Abra o menu do navegador.</li>
+          <li>Toque no menu do navegador (<strong>⋮</strong>).</li>
           <li>Escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
           <li>Confirme. O Margix abre em tela cheia e funciona offline.</li>
         </ol>
       `;
     }
-
     return `
       <ol>
-        <li>No <strong>Chrome</strong> ou <strong>Edge</strong>, procure o ícone de instalação na barra de endereço (à direita da URL).</li>
+        <li>No <strong>Chrome</strong> ou <strong>Edge</strong>, use o ícone de instalação na barra de endereço.</li>
         <li>Clique em <strong>Instalar</strong> e confirme.</li>
         <li>O Margix abre em uma janela própria e funciona offline.</li>
       </ol>
-      <p class="sheet-note">Para levar para o celular, abra este site no navegador do aparelho e use “Adicionar à tela inicial”.</p>
+      <p class="sheet-note">Para usar no celular, abra este site no navegador do aparelho e use “Adicionar à tela inicial”.</p>
     `;
   }
 
@@ -1385,30 +1273,22 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker
           .register('./sw.js', { scope: './', updateViaCache: 'none' })
-          .catch(() => {
-            /* offline support unavailable */
-          });
+          .catch(() => {});
       });
     }
 
-    // Always offer the install affordance until the app is installed.
-    const installed = isStandalone();
-    els.btnInstall.hidden = installed;
-    els.btnInstallFooter.hidden = installed;
+    els.btnInstall.hidden = isStandalone();
 
     window.addEventListener('beforeinstallprompt', (event) => {
       event.preventDefault();
       state.deferredPrompt = event;
       els.btnInstall.hidden = false;
-      els.btnInstall.dataset.mode = 'prompt';
     });
 
     window.addEventListener('appinstalled', () => {
       state.deferredPrompt = null;
       els.btnInstall.hidden = true;
-      els.btnInstallFooter.hidden = true;
       showToast('Margix instalado no seu celular!');
-      scheduleSave();
     });
   }
 
@@ -1421,7 +1301,6 @@
         const choice = await prompt.userChoice;
         if (choice && choice.outcome === 'accepted') {
           els.btnInstall.hidden = true;
-          els.btnInstallFooter.hidden = true;
           showToast('Instalando o Margix…');
         }
       } catch (_) {}
@@ -1473,9 +1352,7 @@
       });
     });
 
-    els.productName.addEventListener('input', scheduleSave);
     els.productName.addEventListener('input', recalculate);
-
     els.quantity.addEventListener('input', recalculate);
 
     els.qtyMinus.addEventListener('click', () => {
@@ -1492,7 +1369,7 @@
       recalculate();
     });
 
-    els.methodGrid.addEventListener('click', (event) => {
+    els.methodChips.addEventListener('click', (event) => {
       const btn = event.target.closest('[data-method]');
       if (!btn) return;
       applyMethod(btn.getAttribute('data-method'));
@@ -1504,28 +1381,36 @@
       selectInstallments(parseInt(btn.getAttribute('data-installments'), 10));
     });
 
-    els.feePct.addEventListener('input', recalculate);
+    els.feeModeChips.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-fee-mode]');
+      if (!btn) return;
+      selectFeeMode(btn.getAttribute('data-fee-mode'));
+    });
 
-    els.feePct.addEventListener('blur', () => {
-      const value = parseDecimal(els.feePct.value);
+    els.taxaExtraPct.addEventListener('input', recalculate);
+    els.taxaExtraPct.addEventListener('blur', () => {
+      const value = parseDecimal(els.taxaExtraPct.value);
       if (!Number.isFinite(value)) return;
       const clamped = clamp(value, 0, MAX_FEE_PCT);
       if (clamped !== value) {
-        els.feePct.value = formatNumberInput(clamped, 2);
+        els.taxaExtraPct.value = formatNumberInput(clamped, 2);
         recalculate();
         showToast(`Taxa limitada a ${formatPct(MAX_FEE_PCT, 0)}.`);
       }
     });
 
-    els.feeFixed.addEventListener('blur', () => {
-      const value = parseDecimal(els.feeFixed.value);
+    els.custoExtraFixo.addEventListener('input', recalculate);
+    els.custoExtraFixo.addEventListener('blur', () => {
+      const value = parseDecimal(els.custoExtraFixo.value);
       if (!Number.isFinite(value)) return;
       const clamped = clamp(value, 0, MAX_FEE_FIXED);
       if (clamped !== value) {
-        els.feeFixed.value = formatNumberInput(clamped, 2);
+        els.custoExtraFixo.value = formatNumberInput(clamped, 2);
         recalculate();
       }
     });
+
+    els.outroCustoUnit.addEventListener('input', recalculate);
 
     els.quantity.addEventListener('blur', () => {
       const qty = clampInt(els.quantity.value, 1, MAX_QTY);
@@ -1534,12 +1419,6 @@
         recalculate();
       }
     });
-
-    els.feeFixed.addEventListener('input', recalculate);
-
-    els.passFee.addEventListener('change', recalculate);
-
-    els.otherCostUnit.addEventListener('input', recalculate);
 
     els.scenariosBody.addEventListener('click', (event) => {
       const row = event.target.closest('tr[data-scenario-pct]');
@@ -1553,13 +1432,13 @@
 
     els.btnCopyClient.addEventListener('click', () => {
       const quote = buildClientQuote();
-      if (quote) copyText(quote, 'Resumo do cliente copiado.');
+      if (quote) copyText(quote, 'Resumo para o cliente copiado!');
     });
 
     els.orderBody.addEventListener('click', (event) => {
-      const btn = event.target.closest('[data-remove-index]');
+      const btn = event.target.closest('[data-remove-idx]');
       if (!btn) return;
-      const index = parseInt(btn.getAttribute('data-remove-index'), 10);
+      const index = parseInt(btn.getAttribute('data-remove-idx'), 10);
       if (Number.isInteger(index) && index >= 0 && index < state.items.length) {
         state.items.splice(index, 1);
         saveItems();
@@ -1572,17 +1451,16 @@
       state.items = [];
       saveItems();
       renderOrder();
-      showToast('Pedido limpo.');
+      showToast('Lista de pedido limpa.');
     });
 
     els.btnCopyOrderQuote.addEventListener('click', () => {
       const quote = buildOrderQuote();
-      if (quote) copyText(quote, 'Orçamento copiado para enviar ao cliente.');
+      if (quote) copyText(quote, 'Orçamento completo copiado para enviar ao cliente!');
     });
 
     els.btnExample.addEventListener('click', () => {
       loadExample();
-      setView('calc', false);
       showToast('Exemplo carregado.');
     });
 
@@ -1590,23 +1468,15 @@
     els.btnTheme.addEventListener('click', toggleTheme);
 
     els.btnInstall.addEventListener('click', handleInstallClick);
-    els.btnInstallFooter.addEventListener('click', handleInstallClick);
     els.installSheetClose.addEventListener('click', () => els.installSheet.close());
     els.installSheet.addEventListener('click', (event) => {
       if (event.target === els.installSheet) els.installSheet.close();
     });
 
-    document.querySelectorAll('.tab[data-view], [data-goto]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        setView(btn.getAttribute('data-view') || btn.getAttribute('data-goto'));
-      });
-    });
-
-    // persistence (debounced) for form fields
     ['input', 'change'].forEach((evt) => {
       document
         .querySelectorAll(
-          '#productName, #quantity, #vendaBase, #descCompra, #precoCompra, #descCliente, #precoFinalCliente, #feePct, #feeFixed, #otherCostUnit, #passFee'
+          '#productName, #quantity, #vendaBase, #descCompra, #precoCompra, #descCliente, #precoFinalCliente, #taxaExtraPct, #custoExtraFixo, #outroCustoUnit'
         )
         .forEach((el) => el.addEventListener(evt, scheduleSave));
     });
@@ -1640,7 +1510,6 @@
     updateBuyChips();
     renderOrder();
     recalculate();
-    setView('calc', false);
   }
 
   if (document.readyState === 'loading') {

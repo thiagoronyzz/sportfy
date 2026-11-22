@@ -24,9 +24,9 @@ Funciona como **PWA**: pode ser instalada no celular, abre em tela cheia e funci
 - **Parcelamento para o cliente**: escolha de 1x a 12x; a taxa estimada da maquininha cresce
   com o número de parcelas e o valor de cada parcela aparece na hora.
 - Taxa percentual + taxa fixa da maquininha.
-- Chave **“Repassar a taxa para o cliente”**: quando ligada, o valor é embutido no total pago
-  pelo cliente (cálculo por dentro), de modo que você recebe exatamente o valor combinado.
-  Quando desligada, a taxa sai do seu lucro.
+- Escolha **quem paga a taxa**: em “Cliente paga a taxa” o valor é embutido no total pago
+  pelo cliente (cálculo por dentro), de modo que você recebe exatamente o valor combinado;
+  em “Eu absorvo” a taxa sai do seu lucro.
 - O acréscimo entra no **valor geral da compra** do cliente, no resumo do pedido e no
   orçamento copiado, incluindo o valor de cada parcela.
 
@@ -47,8 +47,10 @@ Funciona como **PWA**: pode ser instalada no celular, abre em tela cheia e funci
 - **Service worker** (`sw.js`) com cache do app shell: depois da primeira visita, abre offline.
 - Botão **Instalar** no topo quando o navegador permitir; no iPhone, um guia explica
   “Adicionar à Tela de Início”.
-- Interface mobile-first: abas fixas (Calcular / Resultado / Pedido), barra de resumo,
-  áreas de toque grandes, `safe-area` do iPhone e tabelas compactas.
+- Layout original preservado: painel de entradas à esquerda e resultados à direita no
+  desktop; no celular tudo empilha em uma coluna (Dados → Condição comercial → Recebimento
+  → Resultado → Pedido), sem abas.
+- Identidade visual original: fonte **Inter**, logo tipográfica **MARGIX** e paleta esmeralda.
 - Tema claro/escuro, com preferência do sistema e persistência local.
 
 ## Como executar localmente
@@ -65,7 +67,7 @@ ou `localhost`.
 ```
 index.html            interface
 styles.css            design system e responsividade
-app.js                cálculos, interações, abas, instalação
+app.js                cálculos, interações, parcelamento, instalação
 manifest.webmanifest  configuração do PWA
 sw.js                 service worker (offline)
 icons/                ícones do app (SVG + PNGs)
